@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-4 課題リスト</title>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-green: #1B4D3E;      /* 黒板の深緑 */
+            --card-blue: #191970;     /* カードの青 */
+            --shadow-yellow: #FFCC33; /* 付箋風の影 */
+            --text-white: #FFFFFF;
+            --menu-bg: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-green);
+            color: var(--text-white);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* ヘッダー部分 */
+        header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+        }
+
+        .menu-label {
+            display: inline-block;
+            background: var(--menu-bg);
+            color: #000;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            line-height: 1.2;
+        }
+
+        /* 🚀 動的レスポンシブ・グリッドの核心 */
+        .task-grid {
+            display: grid;
+            /* 画面幅に合わせて300px以上のカードを自動で並べる。余白は等分(1fr) */
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 40px 30px; /* 縦横の隙間 */
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* 課題カード */
+        .task-card {
+            background-color: var(--card-blue);
+            padding: 25px;
+            border-radius: 16px;
+            position: relative;
+            /* 画像の立体感を再現 */
+            box-shadow: 12px 12px 0px var(--shadow-yellow);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            min-height: 220px;
+        }
+
+        /* ホバー・クリック時の動き */
+        .task-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 14px 14px 0px var(--shadow-yellow);
+        }
+
+        .task-card:active {
+            transform: translate(8px, 8px);
+            box-shadow: 4px 4px 0px var(--shadow-yellow);
+        }
+
+        .subject {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-align: center;
+            margin: 10px 0;
+            word-break: break-all;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-badge {
+            font-size: 1rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            color: #eee;
+        }
+
+        .deadline {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-align: right;
+            border-top: 2px dashed rgba(255,255,255,0.3);
+            padding-top: 10px;
+        }
+
+        /* スマホ向けの微調整 */
+        @media (max-width: 480px) {
+            .task-grid {
+                grid-template-columns: 1fr; /* 完全に1列 */
+                gap: 50px;
+            }
+            .task-card {
+                min-height: 350px; /* 画像のスマホ版のように縦長に */
+            }
+            .title { font-size: 2rem; }
+        }
+
+        /* 状態表示 */
+        #status-msg {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="menu-label">3-4<br>課題リスト</div>
+    </header>
+
+    <main id="task-list" class="task-grid">
+        </main>
+    
+    <div id="status-msg">チョークで書き込み中...</div>
+
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
+
+    /**
+     * GASからデータを取得
+     */
+    async function loadTasks() {
+        const statusMsg = document.getElementById('status-msg');
+        try {
+            // GitHub Pagesからのfetch。GASはリダイレクトが発生するため自動追従される
+            const response = await fetch(GAS_URL);
+            if (!response.ok) throw new Error("ネットワークエラー");
+            
+            const result = await response.json();
+
+            if (result.status === "SUCCESS") {
+                if (result.tasks.length === 0) {
+                    statusMsg.innerText = "現在、課題はありません。";
+                } else {
+                    statusMsg.style.display = 'none';
+                    renderTasks(result.tasks);
+                }
+            } else {
+                statusMsg.innerText = "データエラー: " + result.status;
+            }
+        } catch (error) {
+            statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
+            console.error("Fetch Error:", error);
+        }
+    }
+
+    /**
+     * 日付の整形 (例: 2024-05-01T12:00:00.000Z -> 5/1 12:00)
+     */
+    function formatDateTime(isoString) {
+        if (!isoString) return "--/-- --:--";
+        const date = new Date(isoString);
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        const h = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${m}/${d} ${h}:${min}`;
+    }
+
+    /**
+     * カードの描画
+     */
+    function renderTasks(tasks) {
+        const container = document.getElementById('task-list');
+        container.innerHTML = '';
+
+        tasks.forEach(task => {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            
+            // 課題名や詳細が空の場合のケア
+            const subject = task.教科 || "不明";
+            const title = task.課題名 || "無題の課題";
+            const detail = task.詳細 ? `{${task.詳細}}` : "{詳細なし}";
+            const deadline = formatDateTime(task.期限);
+
+            card.innerHTML = `
+                <div class="subject">${subject}</div>
+                <div class="title">${title}</div>
+                <div class="detail-badge">${detail}</div>
+                <div class="deadline">${deadline}</div>
+            `;
+            
+            container.appendChild(card);
+        });
+    }
+
+    // ページ読み込み時に実行
+    window.addEventListener('DOMContentLoaded', loadTasks);
+</script>
+</body>
+</html>
