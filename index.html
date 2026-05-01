@@ -264,9 +264,133 @@
             padding: 5px 10px;
             border-radius: 6px;
         }
+        /* クラス選択専用UI */
+        #class-selection-ui {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-green);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .class-selection-container {
+            background-color: var(--menu-bg);
+            padding: 40px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 12px 12px 0px rgba(0,0,0,0.5);
+            color: #000;
+        }
+
+        .class-selection-title {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+
+        .class-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .class-btn {
+            background: var(--card-blue);
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--shadow-yellow);
+            transition: transform 0.1s;
+        }
+
+        .class-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--shadow-yellow);
+        }
+
+        .new-class-group {
+            border-top: 2px dashed #ccc;
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+
+        .new-class-input {
+            width: 70%;
+            padding: 12px;
+            font-size: 1.2rem;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .new-class-btn {
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--shadow-yellow);
+            border: 2px solid #333;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* ローディングアニメーション */
+        .loader {
+            border: 8px solid rgba(255,255,255,0.3);
+            border-top: 8px solid var(--shadow-yellow);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #loading-ui {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+
+    <!-- クラス選択画面 -->
+    <div id="class-selection-ui">
+        <div id="loading-ui">
+            <div class="loader"></div>
+            <div>クラス情報を取得中...</div>
+        </div>
+        <div class="class-selection-container" id="class-selection-container" style="display: none;">
+            <div class="class-selection-title">クラスを選択してください</div>
+            <div class="class-list-container" id="class-list-buttons">
+                <!-- クラスボタンがここに追加される -->
+            </div>
+            <div class="new-class-group">
+                <p style="margin-top:0; font-weight:bold; color:#666;">リストにない場合は新規作成</p>
+                <input type="text" id="new-class-input" class="new-class-input" placeholder="例: 3-4issR8">
+                <button class="new-class-btn" onclick="createNewClass()">作成</button>
+            </div>
+            <button class="btn" style="margin-top: 20px; background:#eee;" onclick="closeClassSelection()" id="close-selection-btn" style="display:none;">キャンセル</button>
+        </div>
+    </div>
 
     <header>
         <div class="menu-label" onclick="promptClassChange()" id="header-class-name">未設定<br>課題リスト</div>
@@ -337,44 +461,79 @@
 
         async function init() {
             if (!currentClass) {
-                // クラス一覧を取得してプロンプトを出す
-                const statusMsg = document.getElementById('status-msg');
-                statusMsg.innerText = "クラス一覧を取得中...";
-                try {
-                    const res = await fetch(`${GAS_URL}?action=getClassList`);
-                    const data = await res.json();
-                    let msg = "クラス名を入力してください。\n";
-                    if(data.classes && data.classes.length > 0) {
-                        msg += `既存のクラス: ${data.classes.join(', ')}\n`;
-                    }
-                    msg += "※存在しないクラス名を入れた場合は新規作成されます。\n（例: 3-4issR8）";
-                    const input = prompt(msg);
-                    if (input) {
-                        currentClass = input.trim();
-                        localStorage.setItem('currentClass', currentClass);
-                        updateHeader();
-                        loadTasks();
-                    } else {
-                        statusMsg.innerText = "クラスが設定されていません。画面左上から設定してください。";
-                    }
-                } catch(e) {
-                    statusMsg.innerText = "クラス一覧の取得に失敗しました。画面左上から直接クラスを設定してください。";
-                    console.error(e);
-                }
+                showClassSelection(false);
             } else {
                 updateHeader();
                 loadTasks();
             }
         }
 
-        async function promptClassChange() {
-            const input = prompt("切り替えるクラス名を入力してください（例: 3-4issR8）：", currentClass);
-            if (input && input.trim() !== currentClass) {
-                currentClass = input.trim();
-                localStorage.setItem('currentClass', currentClass);
-                updateHeader();
-                loadTasks();
+        async function showClassSelection(canCancel = true) {
+            const ui = document.getElementById('class-selection-ui');
+            const loading = document.getElementById('loading-ui');
+            const container = document.getElementById('class-selection-container');
+            const cancelBtn = document.getElementById('close-selection-btn');
+            
+            ui.style.display = 'flex';
+            loading.style.display = 'flex';
+            container.style.display = 'none';
+            cancelBtn.style.display = canCancel ? 'inline-block' : 'none';
+
+            try {
+                const res = await fetch(`${GAS_URL}?action=getClassList`);
+                const data = await res.json();
+                
+                const btnContainer = document.getElementById('class-list-buttons');
+                btnContainer.innerHTML = '';
+                
+                if(data.classes && data.classes.length > 0) {
+                    data.classes.forEach(cls => {
+                        // クラスリストなどのシステムシートは除外
+                        if(['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
+                        
+                        const btn = document.createElement('button');
+                        btn.className = 'class-btn';
+                        btn.innerText = cls;
+                        btn.onclick = () => selectClass(cls);
+                        btnContainer.appendChild(btn);
+                    });
+                } else {
+                    btnContainer.innerHTML = '<p>既存のクラスはありません</p>';
+                }
+                
+                loading.style.display = 'none';
+                container.style.display = 'block';
+            } catch(e) {
+                alert("クラス一覧の取得に失敗しました。");
+                loading.style.display = 'none';
+                container.style.display = 'block';
             }
+        }
+
+        function selectClass(cls) {
+            if (!cls) return;
+            currentClass = cls;
+            localStorage.setItem('currentClass', currentClass);
+            document.getElementById('class-selection-ui').style.display = 'none';
+            updateHeader();
+            loadTasks();
+        }
+
+        function createNewClass() {
+            const input = document.getElementById('new-class-input').value.trim();
+            if (!input) {
+                alert("クラス名を入力してください");
+                return;
+            }
+            selectClass(input);
+        }
+
+        function closeClassSelection() {
+            document.getElementById('class-selection-ui').style.display = 'none';
+        }
+
+        async function promptClassChange() {
+            showClassSelection(true);
         }
 
         async function loadTasks() {
