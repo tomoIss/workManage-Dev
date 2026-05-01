@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +16,9 @@
             --modal-bg: rgba(0, 0, 0, 0.7);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--bg-green);
@@ -147,11 +150,29 @@
         }
 
         @media (max-width: 480px) {
-            .task-grid { grid-template-columns: 1fr; gap: 50px; }
-            .task-card { min-height: 350px; }
-            .title { font-size: 2rem; }
-            header { flex-direction: column; gap: 20px; align-items: flex-start; }
-            .add-btn { align-self: stretch; text-align: center; }
+            .task-grid {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+
+            .task-card {
+                min-height: 350px;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: flex-start;
+            }
+
+            .add-btn {
+                align-self: stretch;
+                text-align: center;
+            }
         }
 
         #status-msg {
@@ -165,7 +186,10 @@
             display: none;
             position: fixed;
             z-index: 100;
-            left: 0; top: 0; width: 100%; height: 100%;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
             background-color: var(--modal-bg);
             justify-content: center;
             align-items: center;
@@ -180,7 +204,7 @@
             max-width: 500px;
             width: 100%;
             border: 4px solid #333;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
@@ -199,7 +223,8 @@
 
         .close-btn {
             position: absolute;
-            top: 15px; right: 20px;
+            top: 15px;
+            right: 20px;
             font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
@@ -209,12 +234,15 @@
         .form-group {
             margin-bottom: 15px;
         }
+
         .form-group label {
             display: block;
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .form-group input, .form-group textarea {
+
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 2px solid #ccc;
@@ -236,16 +264,19 @@
             border: 2px solid #333;
             border-radius: 6px;
             cursor: pointer;
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
         }
+
         .btn:active {
             transform: translate(1px, 1px);
-            box-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+            box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
         }
+
         .btn-primary {
             background-color: var(--bg-green);
             color: white;
         }
+
         .btn-danger {
             background-color: #d9534f;
             color: white;
@@ -257,6 +288,7 @@
             align-items: center;
             margin-bottom: 10px;
         }
+
         .detail-subject {
             font-weight: bold;
             font-size: 1.2rem;
@@ -264,11 +296,15 @@
             padding: 5px 10px;
             border-radius: 6px;
         }
+
         /* クラス選択専用UI */
         #class-selection-ui {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-green);
             z-index: 200;
             flex-direction: column;
@@ -284,7 +320,7 @@
             max-width: 600px;
             width: 100%;
             text-align: center;
-            box-shadow: 12px 12px 0px rgba(0,0,0,0.5);
+            box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.5);
             color: #000;
         }
 
@@ -350,7 +386,7 @@
 
         /* ローディングアニメーション */
         .loader {
-            border: 8px solid rgba(255,255,255,0.3);
+            border: 8px solid rgba(255, 255, 255, 0.3);
             border-top: 8px solid var(--shadow-yellow);
             border-radius: 50%;
             width: 60px;
@@ -358,7 +394,16 @@
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
         #loading-ui {
             display: none;
@@ -370,6 +415,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <!-- クラス選択画面 -->
@@ -388,7 +434,8 @@
                 <input type="text" id="new-class-input" class="new-class-input" placeholder="例: 3-4issR8">
                 <button class="new-class-btn" onclick="createNewClass()">作成</button>
             </div>
-            <button class="btn" style="margin-top: 20px; background:#eee;" onclick="closeClassSelection()" id="close-selection-btn" style="display:none;">キャンセル</button>
+            <button class="btn" style="margin-top: 20px; background:#eee;" onclick="closeClassSelection()"
+                id="close-selection-btn" style="display:none;">キャンセル</button>
         </div>
     </div>
 
@@ -442,15 +489,17 @@
             </div>
             <h2 class="modal-title" id="detail-title" style="border:none; margin-bottom:10px;">課題名</h2>
             <div class="modal-body">
-                <div style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;" id="detail-desc">詳細</div>
-                <div style="margin-top: 15px; text-align: right; font-weight: bold; font-size: 1.2rem; color: #d9534f;" id="detail-deadline">期限</div>
+                <div style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;"
+                    id="detail-desc">詳細</div>
+                <div style="margin-top: 15px; text-align: right; font-weight: bold; font-size: 1.2rem; color: #d9534f;"
+                    id="detail-deadline">期限</div>
             </div>
         </div>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
-        
+
         let currentClass = localStorage.getItem('currentClass') || '';
         let currentTasks = [];
         let deletingTaskId = null;
@@ -473,7 +522,7 @@
             const loading = document.getElementById('loading-ui');
             const container = document.getElementById('class-selection-container');
             const cancelBtn = document.getElementById('close-selection-btn');
-            
+
             ui.style.display = 'flex';
             loading.style.display = 'flex';
             container.style.display = 'none';
@@ -482,15 +531,15 @@
             try {
                 const res = await fetch(`${GAS_URL}?action=getClassList`);
                 const data = await res.json();
-                
+
                 const btnContainer = document.getElementById('class-list-buttons');
                 btnContainer.innerHTML = '';
-                
-                if(data.classes && data.classes.length > 0) {
+
+                if (data.classes && data.classes.length > 0) {
                     data.classes.forEach(cls => {
                         // クラスリストなどのシステムシートは除外
-                        if(['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
-                        
+                        if (['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
+
                         const btn = document.createElement('button');
                         btn.className = 'class-btn';
                         btn.innerText = cls;
@@ -500,10 +549,10 @@
                 } else {
                     btnContainer.innerHTML = '<p>既存のクラスはありません</p>';
                 }
-                
+
                 loading.style.display = 'none';
                 container.style.display = 'block';
-            } catch(e) {
+            } catch (e) {
                 alert("クラス一覧の取得に失敗しました。");
                 loading.style.display = 'none';
                 container.style.display = 'block';
@@ -537,7 +586,7 @@
         }
 
         async function loadTasks() {
-            if(!currentClass) return;
+            if (!currentClass) return;
             const statusMsg = document.getElementById('status-msg');
             const container = document.getElementById('task-list');
             container.innerHTML = '';
@@ -609,7 +658,7 @@
         }
 
         function openAddModal() {
-            if(!currentClass) {
+            if (!currentClass) {
                 alert("先にクラスを設定してください。");
                 promptClassChange();
                 return;
@@ -623,16 +672,16 @@
 
         function openDetailModal(id) {
             const task = currentTasks.find(t => t.課題id === id);
-            if(!task) return;
-            
+            if (!task) return;
+
             document.getElementById('detail-subject').innerText = task.教科 || "不明";
             document.getElementById('detail-title').innerText = task.課題名 || "無題の課題";
             document.getElementById('detail-desc').innerText = task.詳細 || "詳細なし";
             document.getElementById('detail-deadline').innerText = "期限: " + formatDateTime(task.期限);
-            
+
             const delBtn = document.getElementById('detail-delete-btn');
             delBtn.onclick = () => confirmDelete(id);
-            
+
             document.getElementById('detail-modal').style.display = 'flex';
         }
 
@@ -643,14 +692,14 @@
             const detail = document.getElementById('add-detail').value.trim();
             const deadlineRaw = document.getElementById('add-deadline').value;
 
-            if(!subject || !title || !deadlineRaw) {
+            if (!subject || !title || !deadlineRaw) {
                 alert("科目名、課題名、期限は必須です。");
                 return;
             }
 
             // '2024-05-01T12:00' -> '2024/05/01 12:00' のようにフォーマット
             const d = new Date(deadlineRaw);
-            const formattedDeadline = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
+            const formattedDeadline = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
 
             const payload = {
                 action: 'add',
@@ -671,20 +720,20 @@
                     body: JSON.stringify(payload)
                 });
                 const result = await res.json();
-                if(result.status === 'SUCCESS') {
+                if (result.status === 'SUCCESS') {
                     loadTasks();
                 } else {
                     alert("追加エラー: " + result.status);
                     loadTasks();
                 }
-            } catch(e) {
+            } catch (e) {
                 alert("通信エラー: " + e.message);
                 loadTasks();
             }
         }
 
         async function confirmDelete(id) {
-            if(confirm("本当にこの課題を削除しますか？")) {
+            if (confirm("本当にこの課題を削除しますか？")) {
                 closeModals();
                 const payload = {
                     action: 'delete',
@@ -702,13 +751,13 @@
                         body: JSON.stringify(payload)
                     });
                     const result = await res.json();
-                    if(result.status === 'SUCCESS') {
+                    if (result.status === 'SUCCESS') {
                         loadTasks();
                     } else {
                         alert("削除エラー: " + result.status);
                         loadTasks();
                     }
-                } catch(e) {
+                } catch (e) {
                     alert("通信エラー: " + e.message);
                     loadTasks();
                 }
@@ -718,4 +767,5 @@
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
+
 </html>
