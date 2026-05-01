@@ -4,7 +4,7 @@ let currentTasks = [];
 // --- 初期化 ---
 async function init() {
     if (!currentClass) {
-        showClassSelection(false);
+        await showClassSelection(false);
     } else {
         updateHeader();
         loadTasks();
@@ -69,7 +69,22 @@ function createNewClass() {
         alert("クラス名を入力してください");
         return;
     }
-    selectClass(input);
+    // 全角を半角に変換し、小文字に統一してチェック
+    const normalized = input.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    }).toLowerCase();
+
+    const hasIss = /iss/.test(normalized);
+    const digitCount = (normalized.match(/\d/g) || []).length;
+
+    if (hasIss && digitCount === 3) {
+        // 条件に合致すれば作成
+        selectClass(input);
+        inputField.value = ''; // 入力欄をクリア
+    } else {
+        // エラーメッセージ
+        alert("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年2組issr1)");
+    }
 }
 
 function closeClassSelection() {
