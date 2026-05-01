@@ -97,7 +97,10 @@ function promptClassChange() {
 
 // --- 課題の読み込みと描画 ---
 async function loadTasks() {
-    if (!currentClass) return;
+    if (!currentClass) {
+        await showClassSelection(false);
+        return;
+    }
     const statusMsg = document.getElementById('status-msg');
     const container = document.getElementById('task-list');
     container.innerHTML = '';
@@ -180,6 +183,12 @@ async function submitTask() {
 
     if (!subject || !title || !deadlineRaw) {
         alert("科目名、課題名、期限は必須です。");
+        return;
+    }
+
+    if (!currentClass) {
+        alert("クラスが選択されていません。再読み込みしてください。");
+        location.reload(); // 強制リロードしてinitに飛ばす
         return;
     }
 
