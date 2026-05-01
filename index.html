@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3-4 課題リスト</title>
+    <title>課題リスト</title>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-green: #1B4D3E;      /* 黒板の深緑 */
-            --card-blue: #191970;     /* カードの青 */
-            --shadow-yellow: #FFCC33; /* 付箋風の影 */
+            --bg-green: #1B4D3E;
+            --card-blue: #191970;
+            --shadow-yellow: #FFCC33;
             --text-white: #FFFFFF;
             --menu-bg: #FFFFFF;
+            --modal-bg: rgba(0, 0, 0, 0.7);
         }
 
         * { box-sizing: border-box; }
@@ -25,10 +26,12 @@
             min-height: 100vh;
         }
 
-        /* ヘッダー部分 */
         header {
             max-width: 1200px;
             margin: 0 auto 30px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .menu-label {
@@ -40,28 +43,49 @@
             font-weight: 900;
             border: 3px solid #333;
             border-radius: 8px;
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
             line-height: 1.2;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
 
-        /* 🚀 動的レスポンシブ・グリッドの核心 */
+        .menu-label:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+
+        .add-btn {
+            background: var(--shadow-yellow);
+            color: #000;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .add-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+
         .task-grid {
             display: grid;
-            /* 画面幅に合わせて300px以上のカードを自動で並べる。余白は等分(1fr) */
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 40px 30px; /* 縦横の隙間 */
+            gap: 40px 30px;
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
         }
 
-        /* 課題カード */
         .task-card {
             background-color: var(--card-blue);
             padding: 25px;
             border-radius: 16px;
             position: relative;
-            /* 画像の立体感を再現 */
             box-shadow: 12px 12px 0px var(--shadow-yellow);
             display: flex;
             flex-direction: column;
@@ -70,7 +94,6 @@
             min-height: 220px;
         }
 
-        /* ホバー・クリック時の動き */
         .task-card:hover {
             transform: translate(-2px, -2px);
             box-shadow: 14px 14px 0px var(--shadow-yellow);
@@ -108,121 +131,432 @@
             border-radius: 6px;
             margin-bottom: 15px;
             color: #eee;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .deadline {
             font-size: 1.5rem;
             font-weight: 900;
             text-align: right;
-            border-top: 2px dashed rgba(255,255,255,0.3);
+            border-top: 2px dashed rgba(255, 255, 255, 0.3);
             padding-top: 10px;
         }
 
-        /* スマホ向けの微調整 */
         @media (max-width: 480px) {
-            .task-grid {
-                grid-template-columns: 1fr; /* 完全に1列 */
-                gap: 50px;
-            }
-            .task-card {
-                min-height: 350px; /* 画像のスマホ版のように縦長に */
-            }
+            .task-grid { grid-template-columns: 1fr; gap: 50px; }
+            .task-card { min-height: 350px; }
             .title { font-size: 2rem; }
+            header { flex-direction: column; gap: 20px; align-items: flex-start; }
+            .add-btn { align-self: stretch; text-align: center; }
         }
 
-        /* 状態表示 */
         #status-msg {
             text-align: center;
             font-size: 1.2rem;
             margin-top: 50px;
+        }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: var(--modal-bg);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: var(--menu-bg);
+            color: #000;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            border: 4px solid #333;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px; right: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: 2px solid #333;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+        }
+        .btn-primary {
+            background-color: var(--bg-green);
+            color: white;
+        }
+        .btn-danger {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .detail-subject {
+            font-weight: bold;
+            font-size: 1.2rem;
+            background: #eee;
+            padding: 5px 10px;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="menu-label">3-4<br>課題リスト</div>
+        <div class="menu-label" onclick="promptClassChange()" id="header-class-name">未設定<br>課題リスト</div>
+        <button class="add-btn" onclick="openAddModal()">新たな課題の追加</button>
     </header>
 
-    <main id="task-list" class="task-grid">
-        </main>
-    
+    <main id="task-list" class="task-grid"></main>
+
     <div id="status-msg">チョークで書き込み中...</div>
 
-<script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
+    <!-- 課題追加モーダル -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModals()">&times;</span>
+            <h2 class="modal-title">課題の追加</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>科目名</label>
+                    <input type="text" id="add-subject" placeholder="例: 数学">
+                </div>
+                <div class="form-group">
+                    <label>課題名</label>
+                    <input type="text" id="add-title" placeholder="例: プリントP10~15">
+                </div>
+                <div class="form-group">
+                    <label>詳細</label>
+                    <textarea id="add-detail" rows="3" placeholder="提出方法や補足など"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>期限 (yyyy/mm/dd hh:mm)</label>
+                    <!-- type="datetime-local"が便利 -->
+                    <input type="datetime-local" id="add-deadline">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn" onclick="closeModals()">キャンセル</button>
+                <button class="btn btn-primary" onclick="submitTask()">追加する</button>
+            </div>
+        </div>
+    </div>
 
-    /**
-     * GASからデータを取得
-     */
-    async function loadTasks() {
-        const statusMsg = document.getElementById('status-msg');
-        try {
-            // GitHub Pagesからのfetch。GASはリダイレクトが発生するため自動追従される
-            const response = await fetch(GAS_URL);
-            if (!response.ok) throw new Error("ネットワークエラー");
-            
-            const result = await response.json();
+    <!-- 課題詳細・削除モーダル -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModals()">&times;</span>
+            <div class="detail-header">
+                <div class="detail-subject" id="detail-subject">科目名</div>
+                <button class="btn btn-danger" id="detail-delete-btn">削除</button>
+            </div>
+            <h2 class="modal-title" id="detail-title" style="border:none; margin-bottom:10px;">課題名</h2>
+            <div class="modal-body">
+                <div style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;" id="detail-desc">詳細</div>
+                <div style="margin-top: 15px; text-align: right; font-weight: bold; font-size: 1.2rem; color: #d9534f;" id="detail-deadline">期限</div>
+            </div>
+        </div>
+    </div>
 
-            if (result.status === "SUCCESS") {
-                if (result.tasks.length === 0) {
-                    statusMsg.innerText = "現在、課題はありません。";
-                } else {
-                    statusMsg.style.display = 'none';
-                    renderTasks(result.tasks);
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
+        
+        let currentClass = localStorage.getItem('currentClass') || '';
+        let currentTasks = [];
+        let deletingTaskId = null;
+
+        function updateHeader() {
+            document.getElementById('header-class-name').innerHTML = `${currentClass || '未設定'}<br>課題リスト`;
+        }
+
+        async function init() {
+            if (!currentClass) {
+                // クラス一覧を取得してプロンプトを出す
+                const statusMsg = document.getElementById('status-msg');
+                statusMsg.innerText = "クラス一覧を取得中...";
+                try {
+                    const res = await fetch(`${GAS_URL}?action=getClassList`);
+                    const data = await res.json();
+                    let msg = "クラス名を入力してください。\n";
+                    if(data.classes && data.classes.length > 0) {
+                        msg += `既存のクラス: ${data.classes.join(', ')}\n`;
+                    }
+                    msg += "※存在しないクラス名を入れた場合は新規作成されます。\n（例: 3-4issR8）";
+                    const input = prompt(msg);
+                    if (input) {
+                        currentClass = input.trim();
+                        localStorage.setItem('currentClass', currentClass);
+                        updateHeader();
+                        loadTasks();
+                    } else {
+                        statusMsg.innerText = "クラスが設定されていません。画面左上から設定してください。";
+                    }
+                } catch(e) {
+                    statusMsg.innerText = "クラス一覧の取得に失敗しました。画面左上から直接クラスを設定してください。";
+                    console.error(e);
                 }
             } else {
-                statusMsg.innerText = "データエラー: " + result.status;
+                updateHeader();
+                loadTasks();
             }
-        } catch (error) {
-            statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
-            console.error("Fetch Error:", error);
         }
-    }
 
-    /**
-     * 日付の整形 (例: 2024-05-01T12:00:00.000Z -> 5/1 12:00)
-     */
-    function formatDateTime(isoString) {
-        if (!isoString) return "--/-- --:--";
-        const date = new Date(isoString);
-        const m = date.getMonth() + 1;
-        const d = date.getDate();
-        const h = String(date.getHours()).padStart(2, '0');
-        const min = String(date.getMinutes()).padStart(2, '0');
-        return `${m}/${d} ${h}:${min}`;
-    }
+        async function promptClassChange() {
+            const input = prompt("切り替えるクラス名を入力してください（例: 3-4issR8）：", currentClass);
+            if (input && input.trim() !== currentClass) {
+                currentClass = input.trim();
+                localStorage.setItem('currentClass', currentClass);
+                updateHeader();
+                loadTasks();
+            }
+        }
 
-    /**
-     * カードの描画
-     */
-    function renderTasks(tasks) {
-        const container = document.getElementById('task-list');
-        container.innerHTML = '';
+        async function loadTasks() {
+            if(!currentClass) return;
+            const statusMsg = document.getElementById('status-msg');
+            const container = document.getElementById('task-list');
+            container.innerHTML = '';
+            statusMsg.style.display = 'block';
+            statusMsg.innerText = "チョークで書き込み中...";
 
-        tasks.forEach(task => {
-            const card = document.createElement('div');
-            card.className = 'task-card';
+            try {
+                const response = await fetch(`${GAS_URL}?className=${encodeURIComponent(currentClass)}`);
+                if (!response.ok) throw new Error("ネットワークエラー");
+
+                const result = await response.json();
+
+                if (result.status === "SUCCESS") {
+                    currentTasks = result.tasks || [];
+                    if (currentTasks.length === 0) {
+                        statusMsg.innerText = "現在、課題はありません。";
+                    } else {
+                        statusMsg.style.display = 'none';
+                        renderTasks(currentTasks);
+                    }
+                } else {
+                    statusMsg.innerText = "データエラー: " + result.status;
+                }
+            } catch (error) {
+                statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
+                console.error("Fetch Error:", error);
+            }
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return "--/-- --:--";
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return String(isoString);
+            const m = date.getMonth() + 1;
+            const d = date.getDate();
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${m}/${d} ${h}:${min}`;
+        }
+
+        function renderTasks(tasks) {
+            const container = document.getElementById('task-list');
+            container.innerHTML = '';
+
+            tasks.forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'task-card';
+                card.onclick = () => openDetailModal(task.課題id);
+
+                const subject = task.教科 || "不明";
+                const title = task.課題名 || "無題の課題";
+                const detail = task.詳細 ? `${task.詳細}` : "==詳細なし==";
+                const deadline = formatDateTime(task.期限);
+
+                card.innerHTML = `
+                    <div class="subject">${subject}</div>
+                    <div class="title">${title}</div>
+                    <div class="detail-badge">${detail}</div>
+                    <div class="deadline">${deadline}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- モーダル制御 ---
+        function closeModals() {
+            document.getElementById('add-modal').style.display = 'none';
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        function openAddModal() {
+            if(!currentClass) {
+                alert("先にクラスを設定してください。");
+                promptClassChange();
+                return;
+            }
+            document.getElementById('add-subject').value = '';
+            document.getElementById('add-title').value = '';
+            document.getElementById('add-detail').value = '';
+            document.getElementById('add-deadline').value = '';
+            document.getElementById('add-modal').style.display = 'flex';
+        }
+
+        function openDetailModal(id) {
+            const task = currentTasks.find(t => t.課題id === id);
+            if(!task) return;
             
-            // 課題名や詳細が空の場合のケア
-            const subject = task.教科 || "不明";
-            const title = task.課題名 || "無題の課題";
-            const detail = task.詳細 ? `{${task.詳細}}` : "{詳細なし}";
-            const deadline = formatDateTime(task.期限);
-
-            card.innerHTML = `
-                <div class="subject">${subject}</div>
-                <div class="title">${title}</div>
-                <div class="detail-badge">${detail}</div>
-                <div class="deadline">${deadline}</div>
-            `;
+            document.getElementById('detail-subject').innerText = task.教科 || "不明";
+            document.getElementById('detail-title').innerText = task.課題名 || "無題の課題";
+            document.getElementById('detail-desc').innerText = task.詳細 || "詳細なし";
+            document.getElementById('detail-deadline').innerText = "期限: " + formatDateTime(task.期限);
             
-            container.appendChild(card);
-        });
-    }
+            const delBtn = document.getElementById('detail-delete-btn');
+            delBtn.onclick = () => confirmDelete(id);
+            
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
 
-    // ページ読み込み時に実行
-    window.addEventListener('DOMContentLoaded', loadTasks);
-</script>
+        // --- POST API 呼び出し ---
+        async function submitTask() {
+            const subject = document.getElementById('add-subject').value.trim();
+            const title = document.getElementById('add-title').value.trim();
+            const detail = document.getElementById('add-detail').value.trim();
+            const deadlineRaw = document.getElementById('add-deadline').value;
+
+            if(!subject || !title || !deadlineRaw) {
+                alert("科目名、課題名、期限は必須です。");
+                return;
+            }
+
+            // '2024-05-01T12:00' -> '2024/05/01 12:00' のようにフォーマット
+            const d = new Date(deadlineRaw);
+            const formattedDeadline = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
+
+            const payload = {
+                action: 'add',
+                className: currentClass,
+                task: {
+                    subject, title, detail, deadline: formattedDeadline
+                }
+            };
+
+            try {
+                closeModals();
+                const statusMsg = document.getElementById('status-msg');
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = "追加処理中...";
+
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if(result.status === 'SUCCESS') {
+                    loadTasks();
+                } else {
+                    alert("追加エラー: " + result.status);
+                    loadTasks();
+                }
+            } catch(e) {
+                alert("通信エラー: " + e.message);
+                loadTasks();
+            }
+        }
+
+        async function confirmDelete(id) {
+            if(confirm("本当にこの課題を削除しますか？")) {
+                closeModals();
+                const payload = {
+                    action: 'delete',
+                    className: currentClass,
+                    id: id
+                };
+
+                try {
+                    const statusMsg = document.getElementById('status-msg');
+                    statusMsg.style.display = 'block';
+                    statusMsg.innerText = "削除処理中...";
+
+                    const res = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await res.json();
+                    if(result.status === 'SUCCESS') {
+                        loadTasks();
+                    } else {
+                        alert("削除エラー: " + result.status);
+                        loadTasks();
+                    }
+                } catch(e) {
+                    alert("通信エラー: " + e.message);
+                    loadTasks();
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
