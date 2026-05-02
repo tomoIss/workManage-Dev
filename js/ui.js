@@ -1,6 +1,6 @@
 let currentClass = localStorage.getItem('currentClass') || '';
 let currentTasks = [];
-let existingClasses = []; // 【修正点】取得したクラス一覧を保持する変数を追加
+let existingClasses = []; // 修正: 既存のクラス一覧を保持する変数を追加
 
 // --- 初期化 ---
 async function init() {
@@ -33,8 +33,7 @@ async function showClassSelection(canCancel = true) {
         const btnContainer = document.getElementById('class-list-buttons');
         btnContainer.innerHTML = '';
 
-        // 【修正点】取得したクラスリストを保存しておく
-        existingClasses = data.classes || [];
+        existingClasses = data.classes || []; // 修正: 取得したクラス一覧を変数に保存
 
         if (data.classes && data.classes.length > 0) {
             data.classes.forEach(cls => {
@@ -68,34 +67,34 @@ function selectClass(cls) {
 }
 
 function createNewClass() {
-    const inputField = document.getElementById('new-class-input'); // 元コードの inputField 未定義エラーも修正
-    const input = inputField.value.trim();
+    const inputElement = document.getElementById('new-class-input'); // 修正: 要素を取得しておく
+    const input = inputElement.value.trim();
     if (!input) {
         alert("クラス名を入力してください");
         return;
     }
     
-    // 【修正点】全角を半角に変換し、小文字に統一
+    // 全角を半角に変換し、小文字に統一してチェック
     let normalized = input.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     }).toLowerCase();
 
-    // 【修正点】「年」「組」をハイフンに置き換え、rを大文字のRに変換する処理を追加
+    // 修正: 「年」「組」をハイフンに置き換え、rを大文字のRに変換する
     normalized = normalized.replace(/年/g, '-').replace(/組/g, '');
     normalized = normalized.replace(/iss/g, 'iss').replace(/r/g, 'R');
 
     const hasIss = /iss/.test(normalized);
     const digitCount = (normalized.match(/\d/g) || []).length;
 
-    if (hasIss && digitCount === 3) {
-        // 【修正点】既存のクラスが見つかった場合の通知機能を追加
+    if (hasIss && digitCount >= 3) { // 修正: 数字が3つ以上でも通るように `>= 3` に変更
+        // 修正: 既存クラスが存在するかチェック
         if (existingClasses.includes(normalized)) {
             alert(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
         }
-        
-        // 条件に合致すれば変換後の名前で作成（GAS側にも正しい形式で送信される）
+
+        // 条件に合致すれば作成（変換後の正しい形式を渡す）
         selectClass(normalized);
-        inputField.value = ''; // 入力欄をクリア
+        inputElement.value = ''; // 修正: 入力欄をクリア
     } else {
         // エラーメッセージ
         alert("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年4組issr8)");
@@ -224,13 +223,11 @@ async function submitTask() {
             loadTasks();
         } else {
             alert("追加エラー: " + result.status);
-            // 【修正点】エラー時に表示を消す
-            document.getElementById('status-msg').style.display = 'none'; 
+            document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
         }
     } catch (e) {
         alert("通信エラー: " + e.message);
-        // 【修正点】通信エラー時に表示を消す
-        document.getElementById('status-msg').style.display = 'none'; 
+        document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
     }
 }
 
@@ -247,13 +244,11 @@ async function confirmDelete(id) {
             loadTasks();
         } else {
             alert("削除エラー: " + result.status);
-            // 【修正点】エラー時に表示を消す
-            document.getElementById('status-msg').style.display = 'none';
+            document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
         }
     } catch (e) {
         alert("通信エラー: " + e.message);
-        // 【修正点】通信エラー時に表示を消す
-        document.getElementById('status-msg').style.display = 'none';
+        document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
     }
 }
 
