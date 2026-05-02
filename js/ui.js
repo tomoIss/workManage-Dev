@@ -26,7 +26,7 @@ async function fetchClassListOnly() {
 }
 
 function updateHeader() {
-    document.getElementById('header-class-name').innerHTML = `${currentClass || '未設定'}<br>課題リスト`;
+    document.getElementById('header-class-name').innerHTML = `${currentClass || '未設定'}<br>課題リスト(開発版)`;
 }
 
 // --- クラス選択関連 ---
