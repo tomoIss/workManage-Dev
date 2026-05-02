@@ -1,14 +1,27 @@
 let currentClass = localStorage.getItem('currentClass') || '';
 let currentTasks = [];
-let existingClasses = []; // 修正: 既存のクラス一覧を保持する変数を追加
+let existingClasses = []; // 既存のクラス一覧を保持する変数
 
 // --- 初期化 ---
 async function init() {
+    // 既存クラスのリストは常に最初に取得しておく（重複チェックのため）
+    await fetchClassListOnly();
+
     if (!currentClass) {
         await showClassSelection(false);
     } else {
         updateHeader();
         loadTasks();
+    }
+}
+
+// クラスリストのみを取得して変数に格納する内部関数
+async function fetchClassListOnly() {
+    try {
+        const data = await apiGetClassList();
+        existingClasses = data.classes || [];
+    } catch (e) {
+        console.error("クラスリストの取得に失敗しました", e);
     }
 }
 
@@ -29,14 +42,14 @@ async function showClassSelection(canCancel = true) {
     cancelBtn.style.display = canCancel ? 'inline-block' : 'none';
 
     try {
-        const data = await apiGetClassList(); // api.jsの関数を使用
+        // 表示の際にも最新のリストを取得
+        await fetchClassListOnly();
+        
         const btnContainer = document.getElementById('class-list-buttons');
         btnContainer.innerHTML = '';
 
-        existingClasses = data.classes || []; // 修正: 取得したクラス一覧を変数に保存
-
-        if (data.classes && data.classes.length > 0) {
-            data.classes.forEach(cls => {
+        if (existingClasses.length > 0) {
+            existingClasses.forEach(cls => {
                 if (['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
                 const btn = document.createElement('button');
                 btn.className = 'class-btn';
@@ -51,7 +64,7 @@ async function showClassSelection(canCancel = true) {
         loading.style.display = 'none';
         container.style.display = 'block';
     } catch (e) {
-        alert("クラス一覧の取得に失敗しました。");
+        alert("クラス一覧の表示に失敗しました。");
         loading.style.display = 'none';
         container.style.display = 'block';
     }
@@ -67,36 +80,34 @@ function selectClass(cls) {
 }
 
 function createNewClass() {
-    const inputElement = document.getElementById('new-class-input'); // 修正: 要素を取得しておく
+    const inputElement = document.getElementById('new-class-input');
     const input = inputElement.value.trim();
     if (!input) {
         alert("クラス名を入力してください");
         return;
     }
     
-    // 全角を半角に変換し、小文字に統一してチェック
+    // 全角を半角に変換し、小文字に統一
     let normalized = input.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     }).toLowerCase();
 
-    // 修正: 「年」「組」をハイフンに置き換え、rを大文字のRに変換する
+    // 「年」「組」をハイフンに置き換え、rを大文字のRに変換
     normalized = normalized.replace(/年/g, '-').replace(/組/g, '');
     normalized = normalized.replace(/iss/g, 'iss').replace(/r/g, 'R');
 
     const hasIss = /iss/.test(normalized);
     const digitCount = (normalized.match(/\d/g) || []).length;
 
-    if (hasIss && digitCount >= 3) { // 修正: 数字が3つ以上でも通るように `>= 3` に変更
-        // 修正: 既存クラスが存在するかチェック
+    if (hasIss && digitCount >= 3) {
+        // --- 修正: 重複チェック機能 ---
         if (existingClasses.includes(normalized)) {
             alert(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
         }
-
-        // 条件に合致すれば作成（変換後の正しい形式を渡す）
+        
         selectClass(normalized);
-        inputElement.value = ''; // 修正: 入力欄をクリア
+        inputElement.value = '';
     } else {
-        // エラーメッセージ
         alert("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年4組issr8)");
     }
 }
@@ -122,7 +133,7 @@ async function loadTasks() {
     statusMsg.innerText = "チョークで書き込み中...";
 
     try {
-        const result = await apiGetTasks(currentClass); // api.jsの関数を使用
+        const result = await apiGetTasks(currentClass);
 
         if (result.status === "SUCCESS") {
             currentTasks = result.tasks || [];
@@ -200,12 +211,6 @@ async function submitTask() {
         return;
     }
 
-    if (!currentClass) {
-        alert("クラスが選択されていません。再読み込みしてください。");
-        location.reload(); // 強制リロードしてinitに飛ばす
-        return;
-    }
-
     const d = new Date(deadlineRaw);
     const formattedDeadline = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
     const payload = {
@@ -218,16 +223,16 @@ async function submitTask() {
         closeModals();
         document.getElementById('status-msg').style.display = 'block';
         document.getElementById('status-msg').innerText = "追加処理中...";
-        const result = await apiAddTask(payload); // api.js
+        const result = await apiAddTask(payload);
         if (result.status === 'SUCCESS') {
             loadTasks();
         } else {
             alert("追加エラー: " + result.status);
-            document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
+            document.getElementById('status-msg').style.display = 'none';
         }
     } catch (e) {
         alert("通信エラー: " + e.message);
-        document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
+        document.getElementById('status-msg').style.display = 'none';
     }
 }
 
@@ -239,16 +244,16 @@ async function confirmDelete(id) {
     try {
         document.getElementById('status-msg').style.display = 'block';
         document.getElementById('status-msg').innerText = "削除処理中...";
-        const result = await apiDeleteTask(payload); // api.js
+        const result = await apiDeleteTask(payload);
         if (result.status === 'SUCCESS') {
             loadTasks();
         } else {
             alert("削除エラー: " + result.status);
-            document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
+            document.getElementById('status-msg').style.display = 'none';
         }
     } catch (e) {
         alert("通信エラー: " + e.message);
-        document.getElementById('status-msg').style.display = 'none'; // 修正: エラー時に表示を消す
+        document.getElementById('status-msg').style.display = 'none';
     }
 }
 
