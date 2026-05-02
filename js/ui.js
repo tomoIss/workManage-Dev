@@ -87,24 +87,35 @@ function createNewClass() {
         return;
     }
     
-    // 全角を半角に変換し、小文字に統一
+    // 1. 入力値の正規化（全角半角変換、ハイフン、大文字のRへ）
     let normalized = input.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     }).toLowerCase();
 
-    // 「年」「組」をハイフンに置き換え、rを大文字のRに変換
     normalized = normalized.replace(/年/g, '-').replace(/組/g, '');
     normalized = normalized.replace(/iss/g, 'iss').replace(/r/g, 'R');
 
-    const hasIss = /iss/.test(normalized);
+    const hasIss = /iss/i.test(normalized);
     const digitCount = (normalized.match(/\d/g) || []).length;
 
     if (hasIss && digitCount >= 3) {
-        // --- 修正: 重複チェック機能 ---
-        if (existingClasses.includes(normalized)) {
+        // --- 修正: 重複チェックの強化 ---
+        // 既存リスト側も念のため整形（正規化）してから比較する
+        const isExisting = existingClasses.some(cls => {
+            // リスト内の各クラス名も同じルールで変換して比較
+            let checkCls = cls.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+            }).toLowerCase();
+            checkCls = checkCls.replace(/年/g, '-').replace(/組/g, '').replace(/iss/g, 'iss').replace(/r/g, 'R');
+            
+            return checkCls === normalized;
+        });
+
+        if (isExisting) {
             alert(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
         }
         
+        // 接続処理へ
         selectClass(normalized);
         inputElement.value = '';
     } else {
