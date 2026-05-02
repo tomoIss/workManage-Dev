@@ -4,7 +4,7 @@ let existingClasses = []; // 既存のクラス一覧を保持する変数
 
 // --- 初期化 ---
 async function init() {
-    // 既存クラスのリストは常に最初に取得しておく（重複チェックのため）
+    // 既存クラスのリストは常に最初に取得しておく（重複チェック時に使用）
     await fetchClassListOnly();
 
     if (!currentClass) {
