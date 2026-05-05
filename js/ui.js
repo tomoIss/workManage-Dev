@@ -2,15 +2,39 @@ let currentClass = localStorage.getItem('currentClass') || '';
 let currentTasks = [];
 let existingClasses = []; // 既存のクラス一覧を保持する変数
 
+function loadCachedTasks(className) {
+    try {
+        const raw = localStorage.getItem(`cachedTasks_${className}`);
+        if (!raw) return [];
+        const cached = JSON.parse(raw);
+        return Array.isArray(cached) ? cached : [];
+    } catch (e) {
+        console.warn('cachedTasks読み込み失敗', e);
+        return [];
+    }
+}
+
+function saveCachedTasks(className, tasks) {
+    try {
+        localStorage.setItem(`cachedTasks_${className}`, JSON.stringify(tasks));
+    } catch (e) {
+        console.warn('cachedTasks保存失敗', e);
+    }
+}
+
 // --- 初期化 ---
 async function init() {
-    // 既存クラスのリストは常に最初に取得しておく（重複チェック時に使用）
-    await fetchClassListOnly();
-
     if (!currentClass) {
-        await showClassSelection(false);
+        showClassSelection(false);
     } else {
         updateHeader();
+        currentTasks = loadCachedTasks(currentClass);
+        if (currentTasks.length > 0) {
+            renderTasks(currentTasks);
+            const statusMsg = document.getElementById('status-msg');
+            statusMsg.style.display = 'block';
+            statusMsg.innerText = navigator.onLine ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
+        }
         loadTasks();
     }
 }
@@ -20,8 +44,28 @@ async function fetchClassListOnly() {
     try {
         const data = await apiGetClassList();
         existingClasses = data.classes || [];
+        return existingClasses;
     } catch (e) {
         console.error("クラスリストの取得に失敗しました", e);
+        return existingClasses;
+    }
+}
+
+function updateClassSelectionButtons() {
+    const btnContainer = document.getElementById('class-list-buttons');
+    btnContainer.innerHTML = '';
+
+    if (existingClasses.length > 0) {
+        existingClasses.forEach(cls => {
+            if (['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
+            const btn = document.createElement('button');
+            btn.className = 'class-btn';
+            btn.innerText = cls;
+            btn.onclick = () => selectClass(cls);
+            btnContainer.appendChild(btn);
+        });
+    } else {
+        btnContainer.innerHTML = '<p>既存のクラスはありません</p>';
     }
 }
 
@@ -41,9 +85,13 @@ async function showClassSelection(canCancel = true) {
     container.style.display = 'none';
     cancelBtn.style.display = canCancel ? 'inline-block' : 'none';
 
+    const btnContainer = document.getElementById('class-list-buttons');
+    btnContainer.innerHTML = '';
+    document.getElementById('new-class-input').disabled = false;
+    document.querySelector('.new-class-btn').disabled = false;
+
     // オフライン時はクラス変更を制限
     if (!navigator.onLine) {
-        const btnContainer = document.getElementById('class-list-buttons');
         btnContainer.innerHTML = '<p style="color: #ff6b6b; font-weight: bold;">現在、別のクラスの情報を取得できません（オフライン中）</p>';
         document.getElementById('new-class-input').disabled = true;
         document.querySelector('.new-class-btn').disabled = true;
@@ -52,34 +100,29 @@ async function showClassSelection(canCancel = true) {
         return;
     }
 
-    try {
-        // 表示の際にも最新のリストを取得
-        await fetchClassListOnly();
-        
-        const btnContainer = document.getElementById('class-list-buttons');
-        btnContainer.innerHTML = '';
-
-        if (existingClasses.length > 0) {
-            existingClasses.forEach(cls => {
-                if (['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
-                const btn = document.createElement('button');
-                btn.className = 'class-btn';
-                btn.innerText = cls;
-                btn.onclick = () => selectClass(cls);
-                btnContainer.appendChild(btn);
-            });
-        } else {
-            btnContainer.innerHTML = '<p>既存のクラスはありません</p>';
-        }
-
-        loading.style.display = 'none';
-        container.style.display = 'block';
-    } catch (e) {
-        alert("クラス一覧の表示に失敗しました。");
-        loading.style.display = 'none';
-        container.style.display = 'block';
+    // キャッシュ済みリストを先に表示
+    if (existingClasses.length > 0) {
+        updateClassSelectionButtons();
+    } else {
+        btnContainer.innerHTML = '<p>クラス一覧を読み込んでいます...</p>';
     }
+
+    // 最新のリストをバックグラウンドで取得して更新
+    fetchClassListOnly()
+        .then(() => {
+            updateClassSelectionButtons();
+        })
+        .catch(() => {
+            if (existingClasses.length === 0) {
+                btnContainer.innerHTML = '<p>クラス一覧の取得に失敗しました。</p>';
+            }
+        })
+        .finally(() => {
+            loading.style.display = 'none';
+            container.style.display = 'block';
+        });
 }
+
 
 function selectClass(cls) {
     if (!cls) return;
@@ -162,31 +205,45 @@ async function loadTasks() {
     container.innerHTML = '';
     statusMsg.style.display = 'block';
 
-    // オフライン時は前回のデータを表示
-    if (!navigator.onLine) {
-        statusMsg.innerText = "オフライン中：前回のデータを表示しています";
+    const cachedTasks = loadCachedTasks(currentClass);
+    if (cachedTasks.length > 0) {
+        currentTasks = cachedTasks;
         renderTasks(currentTasks);
+        statusMsg.innerText = navigator.onLine ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
+    } else if (!navigator.onLine) {
+        statusMsg.innerText = 'オフライン中です。前回のデータがありません。';
         return;
     }
 
-    statusMsg.innerText = "チョークで書き込み中...";
+    if (!navigator.onLine) {
+        return;
+    }
+
+    statusMsg.innerText = 'チョークで書き込み中...';
 
     try {
         const result = await apiGetTasks(currentClass);
 
-        if (result.status === "SUCCESS") {
+        if (result.status === 'SUCCESS') {
             currentTasks = result.tasks || [];
+            saveCachedTasks(currentClass, currentTasks);
             if (currentTasks.length === 0) {
-                statusMsg.innerText = "現在、課題はありません。";
+                statusMsg.innerText = '現在、課題はありません。';
+                container.innerHTML = '';
             } else {
                 statusMsg.style.display = 'none';
                 renderTasks(currentTasks);
             }
         } else {
-            statusMsg.innerText = "データエラー: " + result.status;
+            statusMsg.innerText = 'データエラー: ' + result.status;
         }
     } catch (error) {
-        statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
+        if (cachedTasks.length > 0) {
+            statusMsg.innerHTML = `データ取得に失敗しました。前回のキャッシュを表示します。<br><small>${error.message}</small>`;
+            renderTasks(cachedTasks);
+        } else {
+            statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
+        }
     }
 }
 
