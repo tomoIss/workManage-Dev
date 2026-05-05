@@ -1,12 +1,30 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
 
 /**
+ * リトライ付きfetch関数（GASの混雑対策）
+ */
+async function fetchWithRetry(url, options, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) return response;
+            throw new Error(`HTTP ${response.status}`);
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            // ランダムな待機時間（1~5秒）
+            const delay = Math.random() * 4000 + 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
+/**
  * クラス一覧を取得する
  */
 async function apiGetClassList() {
     // キャッシュを回避するためにタイムスタンプを付与
     const cacheBuster = `&t=${Date.now()}`;
-    const res = await fetch(`${GAS_URL}?action=getClassList${cacheBuster}`, {
+    const res = await fetchWithRetry(`${GAS_URL}?action=getClassList${cacheBuster}`, {
         method: "GET",
         mode: "cors", // クロスドメイン通信を明示
         redirect: "follow" // GASのリダイレクトを確実に追いかける
@@ -19,7 +37,7 @@ async function apiGetClassList() {
  */
 async function apiGetTasks(className) {
     const cacheBuster = `&t=${Date.now()}`;
-    const response = await fetch(`${GAS_URL}?className=${encodeURIComponent(className)}${cacheBuster}`, {
+    const response = await fetchWithRetry(`${GAS_URL}?className=${encodeURIComponent(className)}${cacheBuster}`, {
         method: "GET",
         mode: "cors",
         redirect: "follow"
@@ -32,7 +50,7 @@ async function apiGetTasks(className) {
  * 課題を追加する
  */
 async function apiAddTask(payload) {
-    const res = await fetch(GAS_URL, {
+    const res = await fetchWithRetry(GAS_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
     });
@@ -43,7 +61,7 @@ async function apiAddTask(payload) {
  * 課題を削除する
  */
 async function apiDeleteTask(payload) {
-    const res = await fetch(GAS_URL, {
+    const res = await fetchWithRetry(GAS_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
     });

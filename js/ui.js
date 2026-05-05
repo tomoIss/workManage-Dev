@@ -41,6 +41,17 @@ async function showClassSelection(canCancel = true) {
     container.style.display = 'none';
     cancelBtn.style.display = canCancel ? 'inline-block' : 'none';
 
+    // オフライン時はクラス変更を制限
+    if (!navigator.onLine) {
+        const btnContainer = document.getElementById('class-list-buttons');
+        btnContainer.innerHTML = '<p style="color: #ff6b6b; font-weight: bold;">現在、別のクラスの情報を取得できません（オフライン中）</p>';
+        document.getElementById('new-class-input').disabled = true;
+        document.querySelector('.new-class-btn').disabled = true;
+        loading.style.display = 'none';
+        container.style.display = 'block';
+        return;
+    }
+
     try {
         // 表示の際にも最新のリストを取得
         await fetchClassListOnly();
@@ -150,6 +161,14 @@ async function loadTasks() {
     const container = document.getElementById('task-list');
     container.innerHTML = '';
     statusMsg.style.display = 'block';
+
+    // オフライン時は前回のデータを表示
+    if (!navigator.onLine) {
+        statusMsg.innerText = "オフライン中：前回のデータを表示しています";
+        renderTasks(currentTasks);
+        return;
+    }
+
     statusMsg.innerText = "チョークで書き込み中...";
 
     try {
