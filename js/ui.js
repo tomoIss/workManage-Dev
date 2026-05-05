@@ -2,6 +2,18 @@ let currentClass = localStorage.getItem('currentClass') || '';
 let currentTasks = [];
 let existingClasses = []; // 既存のクラス一覧を保持する変数
 
+// オフライン検知を改善する関数
+async function isOnline() {
+    if (!navigator.onLine) return false;
+    try {
+        // 小さなリクエストで実際の接続を確認
+        const response = await fetch('./icon/icon-192.jpg', { method: 'HEAD', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
 function loadCachedTasks(className) {
     try {
         const raw = localStorage.getItem(`cachedTasks_${className}`);
@@ -76,7 +88,8 @@ async function init() {
             renderTasks(currentTasks);
             const statusMsg = document.getElementById('status-msg');
             statusMsg.style.display = 'block';
-            statusMsg.innerText = navigator.onLine ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
+            const online = await isOnline();
+            statusMsg.innerText = online ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
         }
         loadTasks();
     }
@@ -134,7 +147,8 @@ async function showClassSelection(canCancel = true) {
     document.querySelector('.new-class-btn').disabled = false;
 
     // オフライン時はクラス変更を制限
-    if (!navigator.onLine) {
+    const online = await isOnline();
+    if (!online) {
         btnContainer.innerHTML = '<div style="color: #ff6b6b; font-weight: bold; padding: 20px; text-align: center;">現在オフラインのため、クラスを切り替えできません。</div>';
         document.getElementById('new-class-input').disabled = true;
         document.querySelector('.new-class-btn').disabled = true;
@@ -176,8 +190,9 @@ function selectClass(cls) {
     loadTasks();
 }
 
-function createNewClass() {
-    if (!navigator.onLine) {
+async function createNewClass() {
+    const online = await isOnline();
+    if (!online) {
         showNativePopup('オフライン中は新しいクラスを作成できません。');
         return;
     }
@@ -253,17 +268,18 @@ async function loadTasks() {
     container.innerHTML = '';
     statusMsg.style.display = 'block';
 
+    const online = await isOnline();
     const cachedTasks = loadCachedTasks(currentClass);
     if (cachedTasks.length > 0) {
         currentTasks = cachedTasks;
         renderTasks(currentTasks);
-        statusMsg.innerText = navigator.onLine ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
-    } else if (!navigator.onLine) {
+        statusMsg.innerText = online ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
+    } else if (!online) {
         statusMsg.innerText = 'オフライン中です。前回のデータがありません。';
         return;
     }
 
-    if (!navigator.onLine) {
+    if (!online) {
         return;
     }
 
@@ -318,8 +334,9 @@ function closeModals() {
     document.getElementById('detail-modal').style.display = 'none';
 }
 
-function openAddModal() {
-    if (!navigator.onLine) {
+async function openAddModal() {
+    const online = await isOnline();
+    if (!online) {
         showNativePopup('オフライン中は課題の追加ができません。');
         return;
     }
@@ -354,7 +371,8 @@ async function submitTask() {
     const detail = document.getElementById('add-detail').value.trim();
     const deadlineRaw = document.getElementById('add-deadline').value;
 
-    if (!navigator.onLine) {
+    const online = await isOnline();
+    if (!online) {
         showNativePopup('オフライン中は課題の追加ができません。');
         return;
     }
@@ -389,7 +407,8 @@ async function submitTask() {
 }
 
 async function confirmDelete(id) {
-    if (!navigator.onLine) {
+    const online = await isOnline();
+    if (!online) {
         showNativePopup('オフライン中は課題の削除ができません。');
         return;
     }
