@@ -375,6 +375,68 @@
             cursor: pointer;
         }
 
+        .native-popup {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .native-popup.active {
+            display: flex;
+        }
+
+        .popup-card {
+            width: min(100%, 420px);
+            background: #fff;
+            color: #000;
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            border: 3px solid #333;
+            text-align: center;
+        }
+
+        .popup-message {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .popup-actions button {
+            flex: 1 1 140px;
+            padding: 14px 0;
+            border: none;
+            border-radius: 12px;
+            background: var(--bg-green);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .popup-actions button.cancel {
+            background: #bbb;
+            color: #111;
+        }
+
+        .popup-actions button:active {
+            transform: translateY(1px);
+        }
+
         /* ローディングアニメーション */
         .loader {
             border: 8px solid rgba(255, 255, 255, 0.3);

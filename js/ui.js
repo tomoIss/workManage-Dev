@@ -22,6 +22,49 @@ function saveCachedTasks(className, tasks) {
     }
 }
 
+function showNativePopup(message, options = {}) {
+    const popup = document.getElementById('native-popup');
+    const messageEl = document.getElementById('native-popup-message');
+    const actions = document.getElementById('native-popup-actions');
+
+    messageEl.innerText = message;
+    actions.innerHTML = '';
+    popup.classList.add('active');
+
+    if (options.type === 'confirm') {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cancel';
+        cancelBtn.innerText = options.cancelText || 'キャンセル';
+        cancelBtn.onclick = () => {
+            closeNativePopup();
+            if (typeof options.onCancel === 'function') options.onCancel();
+        };
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.innerText = options.confirmText || 'OK';
+        confirmBtn.onclick = () => {
+            closeNativePopup();
+            if (typeof options.onConfirm === 'function') options.onConfirm();
+        };
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+    } else {
+        const okBtn = document.createElement('button');
+        okBtn.innerText = options.okText || '閉じる';
+        okBtn.onclick = () => {
+            closeNativePopup();
+            if (typeof options.onClose === 'function') options.onClose();
+        };
+        actions.appendChild(okBtn);
+    }
+}
+
+function closeNativePopup() {
+    const popup = document.getElementById('native-popup');
+    popup.classList.remove('active');
+}
+
 // --- 初期化 ---
 async function init() {
     if (!currentClass) {
@@ -97,6 +140,7 @@ async function showClassSelection(canCancel = true) {
         document.querySelector('.new-class-btn').disabled = true;
         loading.style.display = 'none';
         container.style.display = 'block';
+        showNativePopup('オフライン中はクラス変更できません。');
         return;
     }
 
@@ -133,10 +177,15 @@ function selectClass(cls) {
 }
 
 function createNewClass() {
+    if (!navigator.onLine) {
+        showNativePopup('オフライン中は新しいクラスを作成できません。');
+        return;
+    }
+
     const inputElement = document.getElementById('new-class-input');
     const input = inputElement.value.trim();
     if (!input) {
-        alert("クラス名を入力してください");
+        showNativePopup('クラス名を入力してください。');
         return;
     }
     
@@ -168,7 +217,7 @@ function createNewClass() {
             });
 
             if (isExisting) {
-                alert(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
+                showNativePopup(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
             }
             
             // 接続処理へ
@@ -177,10 +226,10 @@ function createNewClass() {
             
         } catch (e) {
             // 万が一ここでエラーが起きても原因がわかるように表示
-            alert("処理中にエラーが発生しました: " + e.message);
+            showNativePopup("処理中にエラーが発生しました: " + e.message);
         }
     } else {
-        alert("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年4組issr8)");
+        showNativePopup("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年4組issr8)");
     }
 }
 
@@ -270,8 +319,12 @@ function closeModals() {
 }
 
 function openAddModal() {
+    if (!navigator.onLine) {
+        showNativePopup('オフライン中は課題の追加ができません。');
+        return;
+    }
     if (!currentClass) {
-        alert("先にクラスを設定してください。");
+        showNativePopup('先にクラスを設定してください。');
         promptClassChange();
         return;
     }
@@ -301,8 +354,12 @@ async function submitTask() {
     const detail = document.getElementById('add-detail').value.trim();
     const deadlineRaw = document.getElementById('add-deadline').value;
 
+    if (!navigator.onLine) {
+        showNativePopup('オフライン中は課題の追加ができません。');
+        return;
+    }
     if (!subject || !title || !deadlineRaw) {
-        alert("科目名、課題名、期限は必須です。");
+        showNativePopup('科目名、課題名、期限は必須です。');
         return;
     }
 
@@ -322,34 +379,45 @@ async function submitTask() {
         if (result.status === 'SUCCESS') {
             loadTasks();
         } else {
-            alert("追加エラー: " + result.status);
+            showNativePopup("追加エラー: " + result.status);
             document.getElementById('status-msg').style.display = 'none';
         }
     } catch (e) {
-        alert("通信エラー: " + e.message);
+        showNativePopup("通信エラー: " + e.message);
         document.getElementById('status-msg').style.display = 'none';
     }
 }
 
 async function confirmDelete(id) {
-    if (!confirm("本当にこの課題を削除しますか？")) return;
-    closeModals();
-    const payload = { action: 'delete', className: currentClass, id: id };
-
-    try {
-        document.getElementById('status-msg').style.display = 'block';
-        document.getElementById('status-msg').innerText = "削除処理中...";
-        const result = await apiDeleteTask(payload);
-        if (result.status === 'SUCCESS') {
-            loadTasks();
-        } else {
-            alert("削除エラー: " + result.status);
-            document.getElementById('status-msg').style.display = 'none';
-        }
-    } catch (e) {
-        alert("通信エラー: " + e.message);
-        document.getElementById('status-msg').style.display = 'none';
+    if (!navigator.onLine) {
+        showNativePopup('オフライン中は課題の削除ができません。');
+        return;
     }
+
+    showNativePopup('本当にこの課題を削除しますか？', {
+        type: 'confirm',
+        confirmText: '削除する',
+        cancelText: 'キャンセル',
+        onConfirm: async () => {
+            closeModals();
+            const payload = { action: 'delete', className: currentClass, id: id };
+
+            try {
+                document.getElementById('status-msg').style.display = 'block';
+                document.getElementById('status-msg').innerText = '削除処理中...';
+                const result = await apiDeleteTask(payload);
+                if (result.status === 'SUCCESS') {
+                    loadTasks();
+                } else {
+                    showNativePopup('削除エラー: ' + result.status);
+                    document.getElementById('status-msg').style.display = 'none';
+                }
+            } catch (e) {
+                showNativePopup('通信エラー: ' + e.message);
+                document.getElementById('status-msg').style.display = 'none';
+            }
+        }
+    });
 }
 
 function formatDateTime(isoString) {
