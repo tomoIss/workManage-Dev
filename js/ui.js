@@ -92,7 +92,7 @@ async function showClassSelection(canCancel = true) {
 
     // オフライン時はクラス変更を制限
     if (!navigator.onLine) {
-        btnContainer.innerHTML = '<p style="color: #ff6b6b; font-weight: bold;">現在、別のクラスの情報を取得できません（オフライン中）</p>';
+        btnContainer.innerHTML = '<div style="color: #ff6b6b; font-weight: bold; padding: 20px; text-align: center;">現在オフラインのため、クラスを切り替えできません。</div>';
         document.getElementById('new-class-input').disabled = true;
         document.querySelector('.new-class-btn').disabled = true;
         loading.style.display = 'none';
@@ -100,7 +100,6 @@ async function showClassSelection(canCancel = true) {
         return;
     }
 
-    // キャッシュ済みリストを先に表示
     if (existingClasses.length > 0) {
         updateClassSelectionButtons();
     } else {
