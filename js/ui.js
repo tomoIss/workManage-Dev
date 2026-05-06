@@ -446,4 +446,30 @@ function formatDateTime(isoString) {
     return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+// --- 追加: 更新処理 ---
+async function refreshTasks() {
+    const btn = document.querySelector('.refresh-btn');
+    const icon = btn.querySelector('.refresh-icon');
+    
+    // 二重押し防止とアニメーション開始
+    btn.disabled = true;
+    icon.style.display = 'inline-block';
+    icon.animate([
+        { transform: 'rotate(0deg)' },
+        { transform: 'rotate(360deg)' }
+    ], {
+        duration: 500,
+        iterations: 1
+    });
+
+    try {
+        await loadTasks(); // 既存の取得関数を再利用
+    } finally {
+        btn.disabled = false;
+    }
+}
+
 window.addEventListener('DOMContentLoaded', init);
+
+
+
