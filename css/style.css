@@ -43,6 +43,7 @@ header {
     line-height: 1.2;
     cursor: pointer;
     transition: transform 0.1s;
+    z-index: 5;
 }
 
 .menu-label:active {
@@ -50,7 +51,7 @@ header {
     box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
 }
 
-/* --- Refresh Button (Added) --- */
+/* --- Refresh Button --- */
 .refresh-btn {
     background: var(--menu-bg);
     color: #333;
@@ -456,7 +457,7 @@ header {
 }
 
 /* --- Loader --- */
-.loader, .loader-spin {
+.loader {
     border: 8px solid rgba(255, 255, 255, 0.3);
     border-top: 8px solid var(--shadow-yellow);
     border-radius: 50%;
@@ -480,7 +481,7 @@ header {
     font-weight: bold;
 }
 
-/* --- Media Queries for Responsive Header (Refresh Button Position) --- */
+/* --- Media Queries for Responsive Header --- */
 
 @media (min-width: 481px) {
     /* PC/タブレット画面: 更新ボタンをヘッダーの絶対中央に配置 */
@@ -496,26 +497,31 @@ header {
 }
 
 @media (max-width: 480px) {
-    /* スマホ画面: 既存の縦並びスタイルに合わせる */
+    /* スマホ画面: 縦に並べるが、最上段に「ラベル」と「更新ボタン」を横並びにする */
     header {
         flex-direction: column;
         gap: 15px;
-        align-items: center; /* 中央揃え */
+        align-items: flex-start;
     }
 
+    /* ラベルと更新ボタンを横並びにするためのコンテナ的挙動を擬似的に作る */
     .menu-label {
-        align-self: flex-start; /* クラス名は左に寄せておく */
+        width: calc(100% - 70px); /* 更新ボタンの幅分を引く */
+        margin-right: 10px;
     }
 
     .refresh-btn {
-        width: 55px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 55px; /* スマホで押しやすいサイズ */
         height: 55px;
-        margin: 5px 0;
     }
 
     .add-btn {
-        align-self: stretch;
+        align-self: stretch; /* 追加ボタンは横いっぱい */
         text-align: center;
+        margin-top: 5px;
     }
 
     .task-grid {
