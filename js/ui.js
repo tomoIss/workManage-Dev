@@ -446,26 +446,20 @@ function formatDateTime(isoString) {
     return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-// --- 追加: 更新処理 ---
+// --- 追加: 更新処理（ui.jsの末尾などへ） ---
 async function refreshTasks() {
-    const btn = document.querySelector('.refresh-btn');
-    const icon = btn.querySelector('.refresh-icon');
+    const icon = document.querySelector('.refresh-icon');
     
-    // 二重押し防止とアニメーション開始
-    btn.disabled = true;
-    icon.style.display = 'inline-block';
-    icon.animate([
-        { transform: 'rotate(0deg)' },
-        { transform: 'rotate(360deg)' }
-    ], {
-        duration: 500,
-        iterations: 1
-    });
-
+    // アイコンを回転させるアニメーションクラスを付与
+    icon.classList.add('spinning');
+    
     try {
-        await loadTasks(); // 既存の取得関数を再利用
+        await loadTasks(); // 既存のデータ取得関数を実行
     } finally {
-        btn.disabled = false;
+        // 0.5秒後にアニメーションクラスを除去（回転を止める）
+        setTimeout(() => {
+            icon.classList.remove('spinning');
+        }, 500);
     }
 }
 
