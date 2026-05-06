@@ -1,468 +1,533 @@
-        :root {
-            --bg-green: #1B4D3E;
-            --card-blue: #191970;
-            --shadow-yellow: #FFCC33;
-            --text-white: #FFFFFF;
-            --menu-bg: #FFFFFF;
-            --modal-bg: rgba(0, 0, 0, 0.7);
-        }
+:root {
+    --bg-green: #1B4D3E;
+    --card-blue: #191970;
+    --shadow-yellow: #FFCC33;
+    --text-white: #FFFFFF;
+    --menu-bg: #FFFFFF;
+    --modal-bg: rgba(0, 0, 0, 0.7);
+}
 
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            background-color: var(--bg-green);
-            color: var(--text-white);
-            font-family: 'Zen Maru Gothic', sans-serif;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
+body {
+    background-color: var(--bg-green);
+    color: var(--text-white);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+}
 
-        header {
-            max-width: 1200px;
-            margin: 0 auto 30px auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+/* --- Header Layout --- */
+header {
+    max-width: 1200px;
+    margin: 0 auto 30px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative; /* PCでの中央配置の基準 */
+}
 
-        .menu-label {
-            display: inline-block;
-            background: var(--menu-bg);
-            color: #000;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            font-weight: 900;
-            border: 3px solid #333;
-            border-radius: 8px;
-            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
-            line-height: 1.2;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
+.menu-label {
+    display: inline-block;
+    background: var(--menu-bg);
+    color: #000;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    border: 3px solid #333;
+    border-radius: 8px;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+    line-height: 1.2;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
 
-        .menu-label:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
-        }
+.menu-label:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
 
-        .add-btn {
-            background: var(--shadow-yellow);
-            color: #000;
-            padding: 10px 20px;
-            font-size: 1.1rem;
-            font-weight: 900;
-            border: 3px solid #333;
-            border-radius: 8px;
-            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
-            cursor: pointer;
-            transition: all 0.1s;
-        }
+/* --- Refresh Button (Added) --- */
+.refresh-btn {
+    background: var(--menu-bg);
+    color: #333;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    border: 3px solid #333;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+    transition: all 0.1s;
+    z-index: 10;
+    outline: none;
+}
 
-        .add-btn:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
-        }
+.refresh-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
 
-        .task-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 40px 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
+.refresh-icon {
+    display: inline-block;
+    line-height: 1;
+}
 
-        .task-card {
-            background-color: var(--card-blue);
-            padding: 25px;
-            border-radius: 16px;
-            position: relative;
-            box-shadow: 12px 12px 0px var(--shadow-yellow);
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            min-height: 220px;
-        }
+.spinning {
+    animation: icon-spin 0.5s ease-in-out;
+}
 
-        .task-card:hover {
-            transform: translate(-2px, -2px);
-            box-shadow: 14px 14px 0px var(--shadow-yellow);
-        }
+@keyframes icon-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
-        .task-card:active {
-            transform: translate(8px, 8px);
-            box-shadow: 4px 4px 0px var(--shadow-yellow);
-        }
+/* --- Add Button --- */
+.add-btn {
+    background: var(--shadow-yellow);
+    color: #000;
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    border: 3px solid #333;
+    border-radius: 8px;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.1s;
+}
 
-        .subject {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
+.add-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
 
-        .title {
-            font-size: 1.8rem;
-            font-weight: 900;
-            text-align: center;
-            margin: 10px 0;
-            word-break: break-all;
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+/* --- Task Grid & Cards --- */
+.task-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 40px 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
 
-        .detail-badge {
-            font-size: 1rem;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.15);
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            color: #eee;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
+.task-card {
+    background-color: var(--card-blue);
+    padding: 25px;
+    border-radius: 16px;
+    position: relative;
+    box-shadow: 12px 12px 0px var(--shadow-yellow);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 220px;
+}
 
-        .deadline {
-            font-size: 1.5rem;
-            font-weight: 900;
-            text-align: right;
-            border-top: 2px dashed rgba(255, 255, 255, 0.3);
-            padding-top: 10px;
-        }
+.task-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 14px 14px 0px var(--shadow-yellow);
+}
 
-        @media (max-width: 480px) {
-            .task-grid {
-                grid-template-columns: 1fr;
-                gap: 50px;
-            }
+.task-card:active {
+    transform: translate(8px, 8px);
+    box-shadow: 4px 4px 0px var(--shadow-yellow);
+}
 
-            .task-card {
-                min-height: 350px;
-            }
+.subject {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
 
-            .title {
-                font-size: 2rem;
-            }
+.title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    text-align: center;
+    margin: 10px 0;
+    word-break: break-all;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-            header {
-                flex-direction: column;
-                gap: 20px;
-                align-items: flex-start;
-            }
+.detail-badge {
+    font-size: 1rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    color: #eee;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
 
-            .add-btn {
-                align-self: stretch;
-                text-align: center;
-            }
-        }
+.deadline {
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-align: right;
+    border-top: 2px dashed rgba(255, 255, 255, 0.3);
+    padding-top: 10px;
+}
 
-        #status-msg {
-            text-align: center;
-            font-size: 1.2rem;
-            margin-top: 50px;
-        }
+/* --- Status Message --- */
+#status-msg {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 50px;
+}
 
-        /* モーダル */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--modal-bg);
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+/* --- Modals --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-bg);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
 
-        .modal-content {
-            background-color: var(--menu-bg);
-            color: #000;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 500px;
-            width: 100%;
-            border: 4px solid #333;
-            box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
+.modal-content {
+    background-color: var(--menu-bg);
+    color: #000;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    border: 4px solid #333;
+    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
 
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin-top: 0;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 10px;
-        }
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
 
-        .modal-body {
-            margin-bottom: 20px;
-        }
+.modal-body {
+    margin-bottom: 20px;
+}
 
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: #666;
-        }
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+.form-group {
+    margin-bottom: 15px;
+}
 
-        .form-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
 
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ccc;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 1rem;
-        }
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+}
 
-        .btn-group {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
+.btn-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
 
-        .btn {
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: 2px solid #333;
-            border-radius: 6px;
-            cursor: pointer;
-            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
-        }
+.btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: 2px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
 
-        .btn:active {
-            transform: translate(1px, 1px);
-            box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
-        }
+.btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+}
 
-        .btn-primary {
-            background-color: var(--bg-green);
-            color: white;
-        }
+.btn-primary {
+    background-color: var(--bg-green);
+    color: white;
+}
 
-        .btn-danger {
-            background-color: #d9534f;
-            color: white;
-        }
+.btn-danger {
+    background-color: #d9534f;
+    color: white;
+}
 
-        .detail-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
 
-        .detail-subject {
-            font-weight: bold;
-            font-size: 1.2rem;
-            background: #eee;
-            padding: 5px 10px;
-            border-radius: 6px;
-        }
+.detail-subject {
+    font-weight: bold;
+    font-size: 1.2rem;
+    background: #eee;
+    padding: 5px 10px;
+    border-radius: 6px;
+}
 
-        /* クラス選択専用UI */
-        #class-selection-ui {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-green);
-            z-index: 200;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+/* --- Class Selection UI --- */
+#class-selection-ui {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-green);
+    z-index: 200;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-        .class-selection-container {
-            background-color: var(--menu-bg);
-            padding: 40px;
-            border-radius: 16px;
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.5);
-            color: #000;
-        }
+.class-selection-container {
+    background-color: var(--menu-bg);
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.5);
+    color: #000;
+}
 
-        .class-selection-title {
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-        }
+.class-selection-title {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+}
 
-        .class-list-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 30px;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 10px;
-        }
+.class-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+}
 
-        .class-btn {
-            background: var(--card-blue);
-            color: white;
-            padding: 15px 25px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 4px 4px 0px var(--shadow-yellow);
-            transition: transform 0.1s;
-        }
+.class-btn {
+    background: var(--card-blue);
+    color: white;
+    padding: 15px 25px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--shadow-yellow);
+    transition: transform 0.1s;
+}
 
-        .class-btn:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px var(--shadow-yellow);
-        }
+.class-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--shadow-yellow);
+}
 
-        .new-class-group {
-            border-top: 2px dashed #ccc;
-            padding-top: 20px;
-            margin-top: 10px;
-        }
+.new-class-group {
+    border-top: 2px dashed #ccc;
+    padding-top: 20px;
+    margin-top: 10px;
+}
 
-        .new-class-input {
-            width: 70%;
-            padding: 12px;
-            font-size: 1.2rem;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin-right: 10px;
-        }
+.new-class-input {
+    width: 70%;
+    padding: 12px;
+    font-size: 1.2rem;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    margin-right: 10px;
+}
 
-        .new-class-btn {
-            padding: 12px 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background-color: var(--shadow-yellow);
-            border: 2px solid #333;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+.new-class-btn {
+    padding: 12px 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    background-color: var(--shadow-yellow);
+    border: 2px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+}
 
-        .native-popup {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 999;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(4px);
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+/* --- Native Popup --- */
+.native-popup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
 
-        .native-popup.active {
-            display: flex;
-        }
+.native-popup.active {
+    display: flex;
+}
 
-        .popup-card {
-            width: min(100%, 420px);
-            background: #fff;
-            color: #000;
-            border-radius: 18px;
-            padding: 24px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-            border: 3px solid #333;
-            text-align: center;
-        }
+.popup-card {
+    width: min(100%, 420px);
+    background: #fff;
+    color: #000;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+    border: 3px solid #333;
+    text-align: center;
+}
 
-        .popup-message {
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
+.popup-message {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
 
-        .popup-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
+.popup-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
 
-        .popup-actions button {
-            flex: 1 1 140px;
-            padding: 14px 0;
-            border: none;
-            border-radius: 12px;
-            background: var(--bg-green);
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 900;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
+.popup-actions button {
+    flex: 1 1 140px;
+    padding: 14px 0;
+    border: none;
+    border-radius: 12px;
+    background: var(--bg-green);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
 
-        .popup-actions button.cancel {
-            background: #bbb;
-            color: #111;
-        }
+.popup-actions button.cancel {
+    background: #bbb;
+    color: #111;
+}
 
-        .popup-actions button:active {
-            transform: translateY(1px);
-        }
+.popup-actions button:active {
+    transform: translateY(1px);
+}
 
-        /* ローディングアニメーション */
-        .loader {
-            border: 8px solid rgba(255, 255, 255, 0.3);
-            border-top: 8px solid var(--shadow-yellow);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
+/* --- Loader --- */
+.loader, .loader-spin {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    border-top: 8px solid var(--shadow-yellow);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+#loading-ui {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
 
-        #loading-ui {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
+/* --- Media Queries for Responsive Header (Refresh Button Position) --- */
+
+@media (min-width: 481px) {
+    /* PC/タブレット画面: 更新ボタンをヘッダーの絶対中央に配置 */
+    .refresh-btn {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .refresh-btn:active {
+        transform: translate(-50%, -48%);
+    }
+}
+
+@media (max-width: 480px) {
+    /* スマホ画面: 既存の縦並びスタイルに合わせる */
+    header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center; /* 中央揃え */
+    }
+
+    .menu-label {
+        align-self: flex-start; /* クラス名は左に寄せておく */
+    }
+
+    .refresh-btn {
+        width: 55px;
+        height: 55px;
+        margin: 5px 0;
+    }
+
+    .add-btn {
+        align-self: stretch;
+        text-align: center;
+    }
+
+    .task-grid {
+        grid-template-columns: 1fr;
+        gap: 50px;
+    }
+
+    .task-card {
+        min-height: 300px;
+    }
+
+    .title {
+        font-size: 2rem;
+    }
+}
