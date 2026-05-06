@@ -483,6 +483,8 @@ header {
 
 /* --- Media Queries for Responsive Header --- */
 
+/* --- Media Queries for Responsive Header --- */
+
 @media (min-width: 481px) {
     /* PC/タブレット画面: 更新ボタンをヘッダーの絶対中央に配置 */
     .refresh-btn {
