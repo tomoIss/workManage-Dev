@@ -483,8 +483,6 @@ header {
 
 /* --- Media Queries for Responsive Header --- */
 
-/* --- Media Queries for Responsive Header --- */
-
 @media (min-width: 481px) {
     /* PC/タブレット画面: 更新ボタンをヘッダーの絶対中央に配置 */
     .refresh-btn {
@@ -499,25 +497,31 @@ header {
 }
 
 @media (max-width: 480px) {
-    /* スマホ画面: 縦に並べるが、最上段に「ラベル」と「更新ボタン」を横並びにする */
+    /* スマホ画面: 縦に並べるが1段目を横並びにする */
     header {
         flex-direction: column;
         gap: 15px;
-        align-items: flex-start;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
     }
 
-    /* ラベルと更新ボタンを横並びにするためのコンテナ的挙動を擬似的に作る */
+    /* ラベルと更新ボタンの親（header）がflex-direction: columnなので、
+       位置を制御するためにmenu-labelを文字幅に留める */
     .menu-label {
-        width: calc(100% - 70px); /* 更新ボタンの幅分を引く */
-        margin-right: 10px;
+        width: auto; /* 異様に長く伸びるのを防ぐ */
+        max-width: calc(100% - 70px); /* ボタンのスペース分を確保 */
+        align-self: flex-start; /* 左端に配置 */
+        margin-right: auto; /* 右側にスペースを開ける */
     }
 
     .refresh-btn {
         position: absolute;
         top: 0;
         right: 0;
-        width: 55px; /* スマホで押しやすいサイズ */
+        width: 55px;
         height: 55px;
+        /* absoluteを使うことでmenu-labelの幅に影響を与えず右上に固定 */
     }
 
     .add-btn {
@@ -528,14 +532,14 @@ header {
 
     .task-grid {
         grid-template-columns: 1fr;
-        gap: 50px;
+        gap: 40px;
     }
 
     .task-card {
-        min-height: 300px;
+        min-height: 250px;
     }
 
     .title {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 }
