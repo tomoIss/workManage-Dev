@@ -29,8 +29,8 @@ self.addEventListener('fetch', (event) => {
           // レスポンスをキャッシュに保存（ネットワーク優先）
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-          return response;
         }
+        return response;
       }).catch(() => {
         // オフライン時はキャッシュから取得
         return caches.match(event.request);
