@@ -25,7 +25,7 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request)
       .then(response => {
         // GETメゾットだけをキャッシュ
-        if(response.ok && event.requestmethod === 'GET') {
+        if(event.request.method === 'GET') {
           // レスポンスをキャッシュに保存（ネットワーク優先）
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
