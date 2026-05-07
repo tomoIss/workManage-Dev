@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kadai-kanri-v1';
+const CACHE_NAME = 'kadai-kanri-v1.1';
 
 // キャッシュするファイルリスト
 const urlsToCache = [
