@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kadai-kanri-v1.1';
+const CACHE_NAME = 'kadai-kanri-dev-v1.1';
 
 // キャッシュするファイルリスト
 const urlsToCache = [
@@ -24,12 +24,14 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // レスポンスをキャッシュに保存（ネットワーク優先）
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-        return response;
-      })
-      .catch(() => {
+        // GETメゾットだけをキャッシュ
+        if(response.ok && event.requestmethod === 'GET') {
+          // レスポンスをキャッシュに保存（ネットワーク優先）
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          return response;
+        }
+      }).catch(() => {
         // オフライン時はキャッシュから取得
         return caches.match(event.request);
       })
