@@ -6,7 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>課題リストDev</title>
     <link rel="icon" type="image/x-icon" href="icon/favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+    <!-- fontsの読み込みを早め遅延を減らす -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="preload" as="style" href="https://googleapis.com">
+    <!-- fonts通常の読み込み（非同期読み込み） -->
+    <link href="https://googleapis.com" rel="stylesheet" media="print" onload="this.media='all'">
 
     <!-- デザインはCSSファイル -->
     <link rel="stylesheet" href="css/style.css">
