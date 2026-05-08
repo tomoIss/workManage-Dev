@@ -18,6 +18,9 @@ body {
     margin: 0;
     padding: 20px;
     min-height: 100vh;
+    /* テキストのレンダリングを最適化 */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
 }
 
 /* --- Header Layout --- */
