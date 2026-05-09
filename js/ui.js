@@ -1,4 +1,7 @@
-let currentClass = localStorage.getItem('currentClass') || '';
+const KEY_CLASS = 'dev_currentClass';
+const KEY_TASKS_PREFIX = 'dev_cachedTasks_';
+
+let currentClass = localStorage.getItem(KEY_CLASS) || '';
 let currentTasks = [];
 let existingClasses = []; // 既存のクラス一覧を保持する変数
 
@@ -16,7 +19,7 @@ async function isOnline() {
 
 function loadCachedTasks(className) {
     try {
-        const raw = localStorage.getItem(`cachedTasks_${className}`);
+        const raw = localStorage.getItem(KEY_TASKS_PREFIX+className);
         if (!raw) return [];
         const cached = JSON.parse(raw);
         return Array.isArray(cached) ? cached : [];
@@ -28,7 +31,7 @@ function loadCachedTasks(className) {
 
 function saveCachedTasks(className, tasks) {
     try {
-        localStorage.setItem(`cachedTasks_${className}`, JSON.stringify(tasks));
+        localStorage.setItem(KEY_TASKS_PREFIX+${className}, JSON.stringify(tasks));
     } catch (e) {
         console.warn('cachedTasks保存失敗', e);
     }
@@ -184,7 +187,7 @@ async function showClassSelection(canCancel = true) {
 function selectClass(cls) {
     if (!cls) return;
     currentClass = cls;
-    localStorage.setItem('currentClass', currentClass);
+    localStorage.setItem(KEY_CLASS, currentClass);
     document.getElementById('class-selection-ui').style.display = 'none';
     updateHeader();
     loadTasks();
