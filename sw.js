@@ -1,4 +1,5 @@
-const CACHE_NAME = 'kadai-kanri-dev-v1.1';
+const CACHE_PREFIX = 'kadai-kanri-dev-'; // 開発版専用のプレフィックス
+const CACHE_NAME = CACHE_PREFIX + 'v1.1';
 
 // キャッシュするファイルリスト
 const urlsToCache = [
@@ -28,7 +29,7 @@ self.addEventListener('fetch', (event) => {
         if(event.request.method === 'GET') {
           // レスポンスをキャッシュに保存（ネットワーク優先）
           const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));          
         }
         return response;
       }).catch(() => {
@@ -43,7 +44,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          // 「開発版の名前」で始まり、かつ「今の名前」じゃない時だけ消す
+          if (cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
