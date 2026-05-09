@@ -464,6 +464,3 @@ async function refreshTasks() {
 }
 
 window.addEventListener('DOMContentLoaded', init);
-
-
-
