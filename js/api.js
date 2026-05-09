@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec"
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzPmSdad-DIkjoBhha1VfRWU7jDHpQOdVBFsvD5Wmqtwx_0Lc8qTgc3gtxpb1LiaPX2/exec";
 
 /**
  * リトライ付きfetch関数（GASの混雑対策）
