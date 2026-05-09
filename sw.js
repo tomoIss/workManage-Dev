@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
         // オフライン時は自分のキャッシュから取得
         return caches.open(CACHE_NAME).then(cache => {
           return cache.match(event.request);
-      })
+        }); 
   );
 });
 
