@@ -2,7 +2,7 @@ const CACHE_PREFIX = 'kadai-kanri-dev-';
 const CACHE_NAME = CACHE_PREFIX + 'v1.2';
 
 const urlsToCache = [
-  //'./',
+  './',
   './dev.html',
   './manifest.json',
   './css/style.css',
