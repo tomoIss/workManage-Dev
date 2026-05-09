@@ -3,7 +3,7 @@ const CACHE_NAME = CACHE_PREFIX + 'v1.2';
 
 const urlsToCache = [
   './',
-  './dev.html',
+  './index.html',
   './manifest.json',
   './css/style.css',
   './js/api.js',
