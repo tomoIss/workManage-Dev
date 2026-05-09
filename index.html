@@ -125,9 +125,10 @@
 
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(registration => console.log('SW registered'))
-                .catch(error => console.log('SW registration failed'));
+            // scopeを './' に指定することで、このリポジトリ内だけを管理対象にする
+            navigator.serviceWorker.register('sw.js', { scope: './' })
+                .then(registration => console.log('SW registered with scope:', registration.scope))
+                .catch(error => console.log('SW registration failed:', error));
         }
     </script>
 </body>
