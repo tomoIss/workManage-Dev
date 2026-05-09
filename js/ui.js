@@ -31,7 +31,7 @@ function loadCachedTasks(className) {
 
 function saveCachedTasks(className, tasks) {
     try {
-        localStorage.setItem(KEY_TASKS_PREFIX+${className}, JSON.stringify(tasks));
+        localStorage.setItem(KEY_TASKS_PREFIX + className, JSON.stringify(tasks));
     } catch (e) {
         console.warn('cachedTasks保存失敗', e);
     }
