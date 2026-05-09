@@ -1,16 +1,15 @@
-const CACHE_PREFIX = 'kadai-kanri-dev-'; // 開発版専用のプレフィックス
+const CACHE_PREFIX = 'kadai-kanri-dev-'; 
 const CACHE_NAME = CACHE_PREFIX + 'v1.2';
 
-// キャッシュするファイルリスト
 const urlsToCache = [
   './',
-  './index.html',         // メインのファイル
-  './manifest.json',      // マニフェストファイルを追加
-  './css/style.css',      // CSSを追加
-  './js/api.js',          // JSを追加
-  './js/ui.js',           // JSを追加
-  './icon/icon-192.jpg',  // アイコン1
-  './icon/icon-512.jpg'   // アイコン2
+  './index.html',
+  './manifest.json',
+  './css/style.css',
+  './js/api.js',
+  './js/ui.js',
+  './icon/icon-192.jpg',
+  './icon/icon-512.jpg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -25,18 +24,17 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // GETメゾットだけをキャッシュ
         if(event.request.method === 'GET') {
-          // レスポンスをキャッシュに保存（ネットワーク優先）
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));          
         }
         return response;
       }).catch(() => {
-        // オフライン時は自分のキャッシュから取得
+        // 自分の箱（CACHE_NAME）を明示的に指定して、他アプリとの混同を防ぐ
         return caches.open(CACHE_NAME).then(cache => {
           return cache.match(event.request);
         }); 
+      }) // ← ここに閉じカッコが必要でした
   );
 });
 
@@ -45,7 +43,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          // 「開発版の名前」で始まり、かつ「今の名前」じゃない時だけ消す
+          // 開発版のプレフィックスで始まる古いキャッシュだけを削除
           if (cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
