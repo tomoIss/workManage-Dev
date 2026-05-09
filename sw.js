@@ -33,8 +33,9 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       }).catch(() => {
-        // オフライン時はキャッシュから取得
-        return caches.match(event.request);
+        // オフライン時は自分のキャッシュから取得
+        return caches.open(CACHE_NAME).then(cache => {
+          return cache.match(event.request);
       })
   );
 });
