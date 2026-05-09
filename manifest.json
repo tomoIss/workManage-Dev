@@ -1,7 +1,7 @@
 {
   "name": "課題管理のジョ〜(開発版)V1.2",
   "short_name": "課題管理",
-  "start_url": "./dev.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
