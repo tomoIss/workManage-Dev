@@ -354,24 +354,26 @@ function renderTasks(tasks) {
     tasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
     
-        const card = document.createElement('div');
-        // 完了済みなら 'completed' クラスを付与
-        card.className = `task-card ${isDone ? 'completed' : ''}`;
-        card.onclick = () => openDetailModal(task.課題id);
+    const card = document.createElement('div');
+    card.onclick = () => openDetailModal(task.課題id);
 
-        card.innerHTML = `
-            <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
-                    onclick="toggleTaskStatus(event, '${task.課題id}')">
-                ${isDone ? '完了' : '未完了'}
-            </button>
+    card.innerHTML = `
+        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+                onclick="toggleTaskStatus(event, '${task.課題id}')">
+            ${isDone ? '完了' : '未完了'}
+        </button>
 
-            <div class="subject">${task.教科 || "不明"}</div>
-            <div class="title">${task.課題名 || "無題の課題"}</div>
-            <div class="task-footer">
-                <div class="deadline">${formatDateTime(task.期限)}</div>
-            </div>
-        `;
-        container.appendChild(card);
+        <div class="subject">${task.教科 || "不明"}</div>
+        
+        <div class="title">${task.課題名 || "無題の課題"}</div>
+        
+        <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
+        
+        <div class="task-footer">
+            <div class="deadline">${formatDateTime(task.期限)}</div>
+        </div>
+    `;
+    container.appendChild(card);
     });
 }
 
@@ -389,7 +391,7 @@ async function openAddModal() {
     }
     if (!currentClass) {
         showNativePopup('先にクラスを設定してください。');
-        promptClassChange();
+        promptClassChange(https://tomoiss.github.io/workManage-WebFront/);
         return;
     }
     document.getElementById('add-subject').value = '';
