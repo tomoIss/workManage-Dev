@@ -37,6 +37,37 @@ function saveCachedTasks(className, tasks) {
     }
 }
 
+// 課題を一意に特定する指紋（ID+教科+課題名+期限）
+function getTaskFingerprint(task) {
+    const deadline = task.期限 ? new Date(task.期限).getTime() : 'no-deadline';
+    return `${task.課題id}-${task.教科}-${task.課題名}-${deadline}`;
+}
+
+// 完了リストの取得
+function getDoneTasks() {
+    return JSON.parse(localStorage.getItem('dev_done_tasks') || '[]');
+}
+
+// ステータス切り替え（ボタンから直接呼ばれる）
+function toggleTaskStatus(event, taskId) {
+    event.stopPropagation(); // 詳細画面が開くのを防ぐ
+
+    const task = currentTasks.find(t => t.課題id == taskId);
+    if (!task) return;
+
+    const fingerprint = getTaskFingerprint(task);
+    let doneList = getDoneTasks();
+
+    if (doneList.includes(fingerprint)) {
+        doneList = doneList.filter(f => f !== fingerprint);
+    } else {
+        doneList.push(fingerprint);
+    }
+
+    localStorage.setItem('dev_done_tasks', JSON.stringify(doneList));
+    renderTasks(currentTasks); // 画面を即座に更新
+}
+
 function showNativePopup(message, options = {}) {
     const popup = document.getElementById('native-popup');
     const messageEl = document.getElementById('native-popup-message');
@@ -314,24 +345,38 @@ async function loadTasks() {
     }
 }
 
+// 課題のデータを表示
 function renderTasks(tasks) {
     const container = document.getElementById('task-list');
     container.innerHTML = '';
+    const doneList = getDoneTasks();
+
     tasks.forEach(task => {
+        const isDone = doneList.includes(getTaskFingerprint(task));
+        
         const card = document.createElement('div');
-        card.className = 'task-card';
+        // 完了済みなら専用のCSSクラスを付与
+        card.className = `task-card ${isDone ? 'completed' : ''}`;
         card.onclick = () => openDetailModal(task.課題id);
+
         card.innerHTML = `
-            <div class="subject">${task.教科 || "不明"}</div>
+            <div class="task-card-header">
+                <div class="subject">${task.教科 || "不明"}</div>
+                <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+                        onclick="toggleTaskStatus(event, '${task.課題id}')">
+                    ${isDone ? '完了' : '未完了'}
+                </button>
+            </div>
             <div class="title">${task.課題名 || "無題の課題"}</div>
-            <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
-            <div class="deadline">${formatDateTime(task.期限)}</div>
+            <div class="task-footer">
+                <div class="deadline">${formatDateTime(task.期限)}</div>
+            </div>
         `;
         container.appendChild(card);
     });
 }
 
-// --- モーダル制御 ---
+/* --- モーダル制御 --- */
 function closeModals() {
     document.getElementById('add-modal').style.display = 'none';
     document.getElementById('detail-modal').style.display = 'none';
