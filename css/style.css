@@ -206,9 +206,12 @@ header {
     justify-content: center;
     align-items: center;
     padding: 20px;
+    /* ipadでのタップに対応するため */
+    cursor: pointer;
 }
 
 .modal-content {
+    cursor: default;
     background-color: var(--menu-bg);
     color: #000;
     padding: 30px;
