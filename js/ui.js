@@ -353,20 +353,19 @@ function renderTasks(tasks) {
 
     tasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
-        
+    
         const card = document.createElement('div');
-        // 完了済みなら専用のCSSクラスを付与
+        // 完了済みなら 'completed' クラスを付与
         card.className = `task-card ${isDone ? 'completed' : ''}`;
         card.onclick = () => openDetailModal(task.課題id);
 
         card.innerHTML = `
-            <div class="task-card-header">
-                <div class="subject">${task.教科 || "不明"}</div>
-                <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
-                        onclick="toggleTaskStatus(event, '${task.課題id}')">
-                    ${isDone ? '完了' : '未完了'}
-                </button>
-            </div>
+            <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+                    onclick="toggleTaskStatus(event, '${task.課題id}')">
+                ${isDone ? '完了' : '未完了'}
+            </button>
+
+            <div class="subject">${task.教科 || "不明"}</div>
             <div class="title">${task.課題名 || "無題の課題"}</div>
             <div class="task-footer">
                 <div class="deadline">${formatDateTime(task.期限)}</div>
