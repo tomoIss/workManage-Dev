@@ -587,17 +587,6 @@ header {
     box-shadow: 1px 1px 0px #000;
 }
 
-/* 完了したカード全体の暗転表示 */
-.task-card.completed {
-    opacity: 0.6;
-    filter: grayscale(0.6);
-    background-color: #f0f0f0;
-}
-
-.task-card.completed .title {
-    text-decoration: line-through;
-}
-
 
 
 
