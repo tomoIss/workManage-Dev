@@ -391,7 +391,7 @@ async function openAddModal() {
     }
     if (!currentClass) {
         showNativePopup('先にクラスを設定してください。');
-        promptClassChange(https://tomoiss.github.io/workManage-WebFront/);
+        promptClassChange();
         return;
     }
     document.getElementById('add-subject').value = '';
