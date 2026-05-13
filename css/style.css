@@ -208,6 +208,8 @@ header {
     padding: 20px;
     /* ipadでのタップに対応するため */
     cursor: pointer;
+    /* 背景への長押し選択を抑制 */
+    -webkit-tap-highlight-color: transparent;
 }
 
 .modal-content {
