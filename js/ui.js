@@ -5,6 +5,8 @@ let currentClass = localStorage.getItem(KEY_CLASS) || '';
 let currentTasks = [];
 let existingClasses = []; // 既存のクラス一覧を保持する変数
 
+let isModalClosing = false;
+
 // オフライン検知を改善する関数
 async function isOnline() {
     if (!navigator.onLine) return false;
@@ -405,9 +407,16 @@ function renderTasks(tasks) {
 function closeModals() {
     document.getElementById('add-modal').style.display = 'none';
     document.getElementById('detail-modal').style.display = 'none';
+
+    // 0.5秒間、新しい操作を受け付けないようにする
+    isModalClosing = true;
+    setTimeout(() => {
+        isModalClosing = false;
+    }, 500); // 500ミリ秒 = 0.5秒
 }
 
 async function openAddModal() {
+    if (isModalClosing) return;
     const online = await isOnline();
     if (!online) {
         showNativePopup('オフライン中は課題の追加ができません。');
@@ -426,6 +435,7 @@ async function openAddModal() {
 }
 
 function openDetailModal(id) {
+    if (isModalClosing) return;
     const task = currentTasks.find(t => t.課題id === id);
     if (!task) return;
 
@@ -548,7 +558,6 @@ const handleOutsideClick = (event) => {
 };
 //通常のクリック
 window.addEventListener('click',handleOutsideClick);
-// ipad対応用
 window.addEventListener('touchstart', handleOutsideClick, { passive: true });
 
 window.addEventListener('DOMContentLoaded', init);
