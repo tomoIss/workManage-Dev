@@ -48,6 +48,25 @@ function getDoneTasks() {
     return JSON.parse(localStorage.getItem('dev_done_tasks') || '[]');
 }
 
+/**
+ * 現在存在しない課題の完了キャッシュを削除する
+ * @param {Array} latestTasks - サーバーから取得した最新の課題リスト
+ */
+function cleanupDoneTasks(latestTasks) {
+    const doneList = getDoneTasks();
+    if (doneList.length === 0) return;
+
+    // 最新の課題リストから、存在するすべての指紋を取得
+    const validFingerprints = latestTasks.map(task => getTaskFingerprint(task));
+
+    // 今の完了リストの中で「最新リストに存在するもの」だけを残す
+    const cleanedList = doneList.filter(fingerprint => validFingerprints.includes(fingerprint));
+
+    // ストレージを更新
+    localStorage.setItem('dev_done_tasks', JSON.stringify(cleanedList));
+    console.log(`キャッシュを整理しました。保持中: ${cleanedList.length}件`);
+}
+
 // ステータス切り替え（ボタンから直接呼ばれる）
 function toggleTaskStatus(event, taskId) {
     event.stopPropagation(); // 詳細画面が開くのを防ぐ
@@ -325,6 +344,9 @@ async function loadTasks() {
         if (result.status === 'SUCCESS') {
             currentTasks = result.tasks || [];
             saveCachedTasks(currentClass, currentTasks);
+            // 課題進捗用のキャッシュで古いものを削除
+            cleanupDoneTasks(currentTasks);
+            
             if (currentTasks.length === 0) {
                 statusMsg.innerText = '現在、課題はありません。';
                 container.innerHTML = '';
