@@ -148,6 +148,7 @@ header {
     font-size: 1.1rem;
     font-weight: 700;
     margin-bottom: 10px;
+    margin-right: 60px;
     opacity: 0.9;
 }
 
@@ -555,18 +556,23 @@ header {
 
 /* タスクの進捗の切り替えボタン */
 .status-toggle-btn {
+    /* ここが重要！カードの右上に固定します */
+    position: absolute; 
+    top: 15px;
+    right: 15px;
+
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* 少し小さくしてスッキリさせます */
     font-weight: 900;
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 12px; /* 少し角丸を抑えてボタンらしく */
     border: 2px solid #333;
     cursor: pointer;
     background-color: #fff;
     color: #333;
     box-shadow: 2px 2px 0px #000;
     transition: all 0.1s;
-    z-index: 5;
+    z-index: 5; /* 文字より手前に表示 */
 }
 
 /* 完了状態のボタン色 */
