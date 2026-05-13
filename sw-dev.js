@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'kadai-kanri-dev-'; 
-const CACHE_NAME = CACHE_PREFIX + 'v1.2';
+const CACHE_NAME = CACHE_PREFIX + 'v1.3';
 
 const urlsToCache = [
   './',
