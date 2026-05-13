@@ -466,4 +466,17 @@ async function refreshTasks() {
     }
 }
 
+// --- モーダルの背景クリックで閉じる ---
+window.addEventListener('click',(event) => {
+    // 詳細モーダル
+    const detailModal = document.getElementById('detail-modal');
+    // 課題追加モーダル(実験)
+    const addModal = document.getElementById('add-modal');
+    // ここで判定しバツやキャンセルでなくても閉じれるようにする。
+    if (event.target === detailModal || event.target === addModal) {
+        closeModals();
+    }
+    
+});
+
 window.addEventListener('DOMContentLoaded', init);
