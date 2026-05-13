@@ -355,6 +355,8 @@ function renderTasks(tasks) {
         const isDone = doneList.includes(getTaskFingerprint(task));
     
     const card = document.createElement('div');
+
+    card.className = 'task-card';
     card.onclick = () => openDetailModal(task.課題id);
 
     card.innerHTML = `
