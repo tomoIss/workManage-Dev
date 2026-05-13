@@ -552,3 +552,47 @@ header {
         font-size: 1.8rem;
     }
 }
+
+/* タスクの進捗の切り替えボタン */
+.status-toggle-btn {
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 2px solid #333;
+    cursor: pointer;
+    background-color: #fff;
+    color: #333;
+    box-shadow: 2px 2px 0px #000;
+    transition: all 0.1s;
+    z-index: 5;
+}
+
+/* 完了状態のボタン色 */
+.status-toggle-btn.is-done {
+    background-color: #28a745;
+    color: #fff;
+    border-color: #1e7e34;
+}
+
+.status-toggle-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px #000;
+}
+
+/* 完了したカード全体の暗転表示 */
+.task-card.completed {
+    opacity: 0.6;
+    filter: grayscale(0.6);
+    background-color: #f0f0f0;
+}
+
+.task-card.completed .title {
+    text-decoration: line-through;
+}
+
+
+
+
+
