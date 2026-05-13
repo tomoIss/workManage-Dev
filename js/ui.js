@@ -467,16 +467,18 @@ async function refreshTasks() {
 }
 
 // --- モーダルの背景クリックで閉じる ---
-window.addEventListener('click',(event) => {
-    // 詳細モーダル
+const handleOutsideClick = (event) => {
     const detailModal = document.getElementById('detail-modal');
-    // 課題追加モーダル(実験)
     const addModal = document.getElementById('add-modal');
-    // ここで判定しバツやキャンセルでなくても閉じれるようにする。
+
+    // event.target（実際に触れた要素）が、モーダルの背景要素そのものであるか判定
     if (event.target === detailModal || event.target === addModal) {
         closeModals();
     }
-    
-});
+};
+//通常のクリック
+window.addEventListener('click',handleOutsideClick);
+// ipad対応用
+window.addEventListener('touchstart', handleOutsideClick, { passive: true });
 
 window.addEventListener('DOMContentLoaded', init);
