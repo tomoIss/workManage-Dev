@@ -235,9 +235,9 @@ header {
 
 .close-btn {
     position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 1.5rem;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8rem;
     font-weight: bold;
     cursor: pointer;
     color: #666;
@@ -299,6 +299,7 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+    padding-right: 40px;
 }
 
 .detail-subject {
