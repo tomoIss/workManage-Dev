@@ -134,6 +134,14 @@ function closeNativePopup() {
 
 // --- 初期化 ---
 async function init() {
+    // 【新規追加】userNameキャッシュが無い場合は最優先で初期設定モーダルを表示
+    const cachedUsername = localStorage.getItem('userName');
+    if (!cachedUsername) {
+        document.getElementById('username-init-modal').style.display = 'flex';
+        // 背景クリックで閉じないように、既存のhandleOutsideClickの判定対象から除外されます
+        return; 
+    }
+
     if (!currentClass) {
         showClassSelection(false);
     } else {
@@ -148,6 +156,51 @@ async function init() {
         }
         loadTasks();
     }
+}
+
+/**
+ * 初回利用時のユーザー名バリデーションと保存
+ */
+function submitInitialUsername() {
+    const gradeClassRaw = document.getElementById('init-grade-class').value; // "3-4" 等
+    const school = document.getElementById('init-school').value; // "iss"
+    const numberInput = document.getElementById('init-number').value.trim();
+    const errorEl = document.getElementById('init-error');
+
+    errorEl.style.display = 'none';
+
+    // 出席番号の数値バリデーション
+    const num = parseInt(numberInput, 10);
+    if (isNaN(num) || num < 1 || num > 42) {
+        errorEl.innerText = "出席番号は 01 から 42 の間で入力してください。";
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    // 出席番号を2桁の文字列にパディング (例: "5" -> "05")
+    const formattedNumber = String(num).padStart(2, '0');
+
+    // 「学年(1桁) + クラス(1〜2桁)の3桁以内」を生成
+    // 例: "3-4" -> "34", "1-12" -> "112"
+    const parsedGradeClass = gradeClassRaw.replace('-', '');
+
+    // 最終的なユーザー名フォーマットの結合 (例: "34iss05")
+    const finalUserName = `${parsedGradeClass}${school}${formattedNumber}`;
+
+    // ローカルストレージに格納
+    localStorage.setItem('userName', finalUserName);
+
+    // モーダルを閉じてアプリを通常初期化
+    document.getElementById('username-init-modal').style.display = 'none';
+    
+    // 自身のクラス（例: 3-4iss）をデフォルトクラスとして自動設定してあげる親切設計
+    if (!localStorage.getItem(KEY_CLASS)) {
+        currentClass = `${gradeClassRaw}${school}`; // "3-4iss"
+        localStorage.setItem(KEY_CLASS, currentClass);
+    }
+
+    // 本来の初期化処理を再実行
+    init();
 }
 
 // クラスリストのみを取得して変数に格納する内部関数
