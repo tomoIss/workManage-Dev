@@ -127,24 +127,65 @@
 <div id="username-init-modal" class="modal" style="display: none; z-index: 2000; background: rgba(0,0,0,0.85);">
     <div class="modal-content" style="max-width: 360px; text-align: center;">
         <h2 style="margin-top: 0; font-size: 1.3rem; color: #4dadf7;">初期設定</h2>
-        <p style="font-size: 0.9rem; margin-bottom: 20px; color: #ccc;">課題管理を利用するために<br>あなたの情報を教えてください。</p>
+        <p style="font-size: 0.9rem; margin-bottom: 20px; color: #ccc;">あなたの情報を選択してください。</p>
         
-        <div style="text-align: left; margin-bottom: 15px;">
-            <label style="display:block; font-size: 0.85rem; margin-bottom: 5px; color: #aaa;">学年・クラス（手入力）</label>
-            <div style="display: flex; gap: 8px;">
-                <!-- 学年とクラスを入力するテキストボックスに変更 -->
-                <input type="text" id="init-grade-class" placeholder="例: 3-4 や 3年4組" style="flex: 1; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444; box-sizing: border-box;">
-                
-                <select id="init-school" style="width: 90px; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
-                    <option value="iss" selected>iss</option>
+        <!-- 学年・クラスの選択 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 15px; text-align: left;">
+            <div style="flex: 1;">
+                <label style="display:block; font-size: 0.82rem; margin-bottom: 5px; color: #aaa;">学年</label>
+                <select id="init-grade" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
+                    <option value="1">1年</option>
+                    <option value="2">2年</option>
+                    <option value="3" selected>3年</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="display:block; font-size: 0.82rem; margin-bottom: 5px; color: #aaa;">クラス</label>
+                <select id="init-class" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
+                    <option value="1">1組</option>
+                    <option value="2">2組</option>
+                    <option value="3">3組</option>
+                    <option value="4" selected>4組</option>
+                    <option value="5">5組</option>
+                    <option value="6">6組</option>
+                    <option value="7">7組</option>
+                    <option value="8">8組</option>
+                    <option value="9">9組</option>
                 </select>
             </div>
         </div>
 
-        <div style="text-align: left; margin-bottom: 25px;">
-            <label style="display:block; font-size: 0.85rem; margin-bottom: 5px; color: #aaa;">出席番号 (2桁: 01〜42)</label>
-            <input type="number" id="init-number" min="1" max="42" placeholder="例: 05" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444; box-sizing: border-box;">
-            <small id="init-error" style="color: #ff6b6b; font-size: 0.8rem; display: none; margin-top: 5px; white-space: pre-line;"></small>
+        <!-- 出席番号の選択（01〜42） -->
+        <div style="text-align: left; margin-bottom: 15px;">
+            <label style="display:block; font-size: 0.82rem; margin-bottom: 5px; color: #aaa;">出席番号</label>
+            <select id="init-attendance" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
+                <!-- JavaScript側で01〜42を自動生成する、もしくは固定で埋め込みます（以下は確実な固定埋め込み） -->
+                <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option>
+                <option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option>
+                <option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
+                <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option>
+                <option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option>
+                <option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option>
+                <option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35" selected>35</option>
+                <option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option>
+                <option value="41">41</option><option value="42">42</option>
+            </select>
+        </div>
+
+        <!-- 学校コード & 識別子の選択 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 25px; text-align: left;">
+            <div style="flex: 1;">
+                <label style="display:block; font-size: 0.82rem; margin-bottom: 5px; color: #aaa;">学校コード</label>
+                <select id="init-school" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
+                    <option value="iss" selected>iss</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="display:block; font-size: 0.82rem; margin-bottom: 5px; color: #aaa;">識別子</label>
+                <select id="init-backend-id" style="width: 100%; padding: 10px; border-radius: 6px; background: #2b2b2b; color: #fff; border: 1px solid #444;">
+                    <option value="R8" selected>R8</option>
+                </select>
+            </div>
         </div>
 
         <button onclick="submitInitialUsername()" style="width: 100%; padding: 12px; background: #4dadf7; color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer;">
