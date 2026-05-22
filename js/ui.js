@@ -226,19 +226,32 @@ async function showClassSelection(canCancel = true) {
 
     const btnContainer = document.getElementById('class-list-buttons');
     btnContainer.innerHTML = '';
-    document.getElementById('new-class-input').disabled = false;
-    document.querySelector('.new-class-btn').disabled = false;
+
+    // セレクトボックスとボタンの要素を取得
+    const gradeSel = document.getElementById('new-class-grade');
+    const classSel = document.getElementById('new-class-class');
+    const schoolSel = document.getElementById('new-class-school');
+    const createBtn = document.querySelector('.new-class-btn');
 
     const online = await isOnline();
     if (!online) {
         btnContainer.innerHTML = '<div style="color: #ff6b6b; font-weight: bold; padding: 20px; text-align: center;">現在オフラインのため、クラスを切り替えできません。</div>';
-        document.getElementById('new-class-input').disabled = true;
-        document.querySelector('.new-class-btn').disabled = true;
+        if (gradeSel) gradeSel.disabled = true;
+        if (classSel) classSel.disabled = true;
+        if (schoolSel) schoolSel.disabled = true;
+        if (createBtn) createBtn.disabled = true;
+        
         loading.style.display = 'none';
         container.style.display = 'block';
         showNativePopup('オフライン中はクラス変更できません。');
         return;
     }
+
+    // オンライン時は有効化
+    if (gradeSel) gradeSel.disabled = false;
+    if (classSel) classSel.disabled = false;
+    if (schoolSel) schoolSel.disabled = false;
+    if (createBtn) createBtn.disabled = false;
 
     if (existingClasses.length > 0) {
         updateClassSelectionButtons();
@@ -270,7 +283,23 @@ function selectClass(cls) {
     loadTasks();
 }
 
-// ★【古い方法を維持】厳密なフォーマットチェックや自動置換が入る前の元のシンプルな処理に戻しました
+// 学校の年度ベース（令和）を計算して「R8」などの文字列を返すヘルパー関数
+function getSchoolYearCode() {
+    const now = new Date();
+    let year = now.getFullYear();
+    const month = now.getMonth() + 1; // 1〜12
+
+    // 1月〜3月は「前年度」扱いにする
+    if (month >= 1 && month <= 3) {
+        year -= 1;
+    }
+
+    // 令和の計算（西暦から2018を引く。2026年なら 2026 - 2018 = 8）
+    const reiwaYear = year - 2018;
+    return `R${reiwaYear}`;
+}
+
+// クラス作成ボタンを押したときの処理
 async function createNewClass() {
     const online = await isOnline();
     if (!online) {
@@ -278,22 +307,47 @@ async function createNewClass() {
         return;
     }
 
-    const inputElement = document.getElementById('new-class-input');
-    const input = inputElement.value.trim();
-    if (!input) {
-        showNativePopup('クラス名を入力してください。');
-        return;
-    }
+    // 選択された値を取得
+    const grade = document.getElementById('new-class-grade').value;
+    const cls = document.getElementById('new-class-class').value;
+    const school = document.getElementById('new-class-school').value;
+    const yearCode = getSchoolYearCode(); // 動的に年度を取得（例: R8）
+
+    // 正規化されたクラス名を作成 (例: 3-4issR8)
+    const formattedClassName = `${grade}-${cls}${school}${yearCode}`;
 
     try {
-        // 元のシンプルな重複チェックと遷移
-        if (existingClasses.includes(input)) {
+        // 既存のクラス一覧（existingClasses）と比較
+        if (existingClasses.includes(formattedClassName)) {
             showNativePopup(`既存のクラスが見つかりました。データに接続します。`);
+            selectClass(formattedClassName);
+            return;
         }
-        selectClass(input);
-        inputElement.value = '';
+
+        // 該当しない（新しい）場合、サーバーに新規クラス作成をリクエスト
+        document.getElementById('status-msg').style.display = 'block';
+        document.getElementById('status-msg').innerText = '新規クラスを作成中...';
+
+        // ※ api.jsで定義している「クラス作成用API」を呼び出してください。
+        // ここでは仮に apiCreateClass という関数名、および以下のペイロード構造としています。
+        const result = await apiCreateClass({
+            action: 'createClass',
+            className: formattedClassName
+        });
+
+        if (result && result.status === 'SUCCESS') {
+            showNativePopup(`新規クラス「${formattedClassName}」を作成しました。`);
+            // 最新のクラス一覧をサーバーから再取得して同期
+            await fetchClassListOnly();
+            // 新しく作ったクラスを選択状態にする
+            selectClass(formattedClassName);
+        } else {
+            showNativePopup('クラスの作成に失敗しました: ' + (result ? result.status : 'エラー'));
+        }
     } catch (e) {
         showNativePopup("処理中にエラーが発生しました: " + e.message);
+    } finally {
+        document.getElementById('status-msg').style.display = 'none';
     }
 }
 
