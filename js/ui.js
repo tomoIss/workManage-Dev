@@ -159,76 +159,32 @@ async function init() {
 }
 
 /**
- * 初回利用時のユーザー名バリデーションと保存（手入力対応版）
+ * 初回利用時のユーザー識別コード(userName)生成と保存（完全選択式版）
  */
 function submitInitialUsername() {
-    const gradeClassInput = document.getElementById('init-grade-class').value.trim();
-    const school = document.getElementById('init-school').value; // "iss"
-    const numberInput = document.getElementById('init-number').value.trim();
-    const errorEl = document.getElementById('init-error');
+    // 各セレクトボックスから値を取得
+    const grade = document.getElementById('init-grade').value;            // 例: "3"
+    const cls = document.getElementById('init-class').value;              // 例: "4"
+    const attendanceNo = document.getElementById('init-attendance').value;  // 例: "35"
+    const school = document.getElementById('init-school').value;          // 例: "iss"
+    const backendId = document.getElementById('init-backend-id').value;    // 例: "R8"
 
-    errorEl.style.display = 'none';
-
-    // 1. 学年・クラス入力の存在チェック
-    if (!gradeClassInput) {
-        errorEl.innerText = "学年・クラスを入力してください。";
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    // 2. 入力値の正規化 (全角英数の半角化、小文字化、年・組をハイフンに置換)
-    let normalized = gradeClassInput.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-    }).toLowerCase();
-    normalized = normalized.replace(/年/g, '-').replace(/組/g, ''); // "3年4組" -> "3-4" に
-
-    // 3. 正規表現で「学年(1桁)-クラス(1〜2桁)」のパターンを抽出
-    const match = normalized.match(/^(\d{1})-(\d{1,2})$/);
-    if (!match) {
-        errorEl.innerText = "クラス名の形式が正しくありません。\n「3-4」や「3年4組」のように入力してください。";
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    const grade = match[1]; // 例: "3"
-    const cls = match[2];   // 例: "4" や "10"
-
-    // 合計が3桁を超えていないか最終防衛（例: 学年2桁などは弾く）
-    if ((grade + cls).length > 3) {
-        errorEl.innerText = "学年とクラスの桁数が多すぎます。\n3桁以内で入力してください。(例: 1-12)";
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    // 4. 出席番号の数値バリデーション
-    const num = parseInt(numberInput, 10);
-    if (isNaN(num) || num < 1 || num > 42) {
-        errorEl.innerText = "出席番号は 01 から 42 の間で入力してください。";
-        errorEl.style.display = 'block';
-        return;
-    }
-
-    // 5. 各パーツの整形と結合
-    const parsedGradeClass = `${grade}${cls}`;           // 例: "34", "110" （ハイフンなし3桁以内）
-    const formattedNumber = String(num).padStart(2, '0'); // 例: "05"
+    // 1. ユーザー識別用の文字列を作成 (例: "3435issR8")
+    const finalUserName = `${grade}${cls}${attendanceNo}${school}${backendId}`;
     
-    // 最終的なユーザー名 (例: "34iss05")
-    const finalUserName = `${parsedGradeClass}${school}${formattedNumber}`;
-
-    // 6. ローカルストレージに格納
+    // ローカルストレージにユーザー名を保存
     localStorage.setItem('userName', finalUserName);
 
-    // モーダルを閉じる
-    document.getElementById('username-init-modal').style.display = 'none';
-    
-    // 自身のクラス（例: 3-4iss）をデフォルトクラスとして自動補完して保存
+    // 2. クラス名の自動組み立てと保存 (例: "3-4issR8")
     if (!localStorage.getItem(KEY_CLASS)) {
-        const defaultClass = `${grade}-${cls}${school}`; // "3-4iss" 形式で保存
-        currentClass = defaultClass;
+        const autoClassName = `${grade}-${cls}${school}${backendId}`;
+        currentClass = autoClassName;
         localStorage.setItem(KEY_CLASS, currentClass);
     }
 
-    // アプリの通常初期化処理を走らせる
+    // 3. モーダルを非表示にして画面ヘッダー等を更新し、通常起動
+    document.getElementById('username-init-modal').style.display = 'none';
+    updateHeader();
     init();
 }
 
