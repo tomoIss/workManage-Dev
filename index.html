@@ -37,11 +37,35 @@
             <div class="class-list-container" id="class-list-buttons">
                 <!-- クラスボタンがここに追加される -->
             </div>
+            
+            <!-- 【変更箇所】ここから：入力フォームを選択式（セレクトボックス）に修正 -->
             <div class="new-class-group">
                 <p style="margin-top:0; font-weight:bold; color:#666;">リストにない場合は新規作成</p>
-                <input type="text" id="new-class-input" class="new-class-input" placeholder="例: 3-4issR8">
-                <button class="new-class-btn" onclick="createNewClass()">作成</button>
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <select id="new-class-grade" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                        <option value="1">1年</option>
+                        <option value="2">2年</option>
+                        <option value="3">3年</option>
+                    </select>
+                    <select id="new-class-class" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                        <option value="1">1組</option>
+                        <option value="2">2組</option>
+                        <option value="3">3組</option>
+                        <option value="4">4組</option>
+                        <option value="5">5組</option>
+                        <option value="6">6組</option>
+                        <option value="7">7組</option>
+                        <option value="8">8組</option>
+                        <option value="9">9組</option>
+                    </select>
+                    <select id="new-class-school" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                        <option value="iss" selected>iss</option>
+                    </select>
+                </div>
+                <button class="new-class-btn" style="width: 100%; padding: 10px;" onclick="createNewClass()">作成</button>
             </div>
+            <!-- 【変更箇所】ここまで -->
+
             <button class="btn" style="margin-top: 20px; background:#eee;" onclick="closeClassSelection()"
                 id="close-selection-btn" style="display:none;">キャンセル</button>
         </div>
