@@ -161,6 +161,7 @@ async function init() {
         }
         loadTasks();
     }
+}
 
 /**
  * 初回利用時のユーザー識別コード(userName)生成と保存（完全選択式版）
