@@ -259,47 +259,75 @@ async function createNewClass() {
         return;
     }
     
-    // 1. 入力値の正規化 (String変換を挟んで安全にする)
+    // 1. 入力値の正規化 (全角数字の半角化、小文字統一、年・組をハイフンに置換)
     let normalized = String(input).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
     }).toLowerCase();
 
     normalized = normalized.replace(/年/g, '-').replace(/組/g, '');
-    normalized = normalized.replace(/iss/g, 'iss').replace(/r/g, 'R');
 
-    const hasIss = /iss/i.test(normalized);
-    const digitCount = (normalized.match(/\d/g) || []).length;
+    // 2. 厳密なフォーマットチェック (ハイフンを含む3〜4桁のクラス識別 + 許可する学校コード)
+    // フロントの定数として管理可能な学校コード配列
+    const ALLOWED_SCHOOL_CODES = ['iss'];
+    
+    // 「数字1-2桁 + ハイフン + 数字1-2桁 + アルファベット1-3桁」にマッチさせる
+    const match = normalized.match(/^(\d{1,2}-\d{1,2})([a-z]{1,3})$/);
 
-    if (hasIss && digitCount >= 3) {
-        try {
-            // --- 修正: エラーでクラッシュしないための安全な比較 ---
-            const isExisting = existingClasses.some(cls => {
-                if (!cls) return false; // 空データはスキップ
-                
-                // GASのデータが数値型などで渡ってきてもエラーにならないよう String(cls) で文字列化
-                let checkCls = String(cls).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-                }).toLowerCase();
-                
-                checkCls = checkCls.replace(/年/g, '-').replace(/組/g, '').replace(/iss/g, 'iss').replace(/r/g, 'R');
-                
-                return checkCls === normalized;
+    if (!match) {
+        showNativePopup("クラス名の形式が正しくありません。\n「学年-組」を4桁以内、かつ学校コードを入力してください。\n(例: 3-4iss, 1-10iss, 3年4組iss)");
+        return;
+    }
+
+    const classPart = match[1];  // 例: "3-4" や "1-10"
+    const schoolPart = match[2]; // 例: "iss"
+
+    // クラス識別部がハイフン含め4桁を超えているかチェック (例: 12-34 は5桁なのでエラー)
+    if (classPart.length > 4) {
+        showNativePopup("クラス指定（学年-組）の桁数が多すぎます。4桁以内に収めてください。\n(例: 1-10iss)");
+        return;
+    }
+
+    // 学校識別コードが有効なものかチェック
+    if (!ALLOWED_SCHOOL_CODES.includes(schoolPart)) {
+        showNativePopup(`未登録の学校コード「${schoolPart}」です。`);
+        return;
+    }
+
+    // 最終決定される「年号なし」のきれいな入力値 (例: 3-4iss)
+    const finalClassName = `${classPart}${schoolPart}`;
+
+    try {
+        const isExisting = existingClasses.some(cls => {
+            if (!cls) return false;
+            
+            let checkCls = String(cls).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+            }).toLowerCase();
+            
+            checkCls = checkCls.replace(/年/g, '-').replace(/組/g, '');
+            
+            // 既存リストにはバックエンド側で付与された「3-4issR8」などのフルネームが入っているため、
+            // 前半部分が一致するか、または完全に一致するかを検証します
+            return checkCls === finalClassName || checkCls.startsWith(finalClassName);
+        });
+
+        if (isExisting) {
+            // 既存クラスがあれば、そちらの既存データ名（年号付きフルネーム等）を優先して接続
+            const existingFullName = existingClasses.find(cls => {
+                let c = String(cls).toLowerCase().replace(/年/g, '-').replace(/組/g, '');
+                return c.startsWith(finalClassName);
             });
-
-            if (isExisting) {
-                showNativePopup(`既存のクラス「${normalized}」が見つかりました。既存のデータに接続します。`);
-            }
-            
-            // 接続処理へ
-            selectClass(normalized);
-            inputElement.value = '';
-            
-        } catch (e) {
-            // 万が一ここでエラーが起きても原因がわかるように表示
-            showNativePopup("処理中にエラーが発生しました: " + e.message);
+            showNativePopup(`既存のクラスが見つかりました。データに接続します。`);
+            selectClass(existingFullName || finalClassName);
+        } else {
+            // 完全新規であれば、年号が付与されていない状態の名前を送信（GAS側が受け取って自動でR8等を付与してシート生成します）
+            selectClass(finalClassName);
         }
-    } else {
-        showNativePopup("クラス名の形式が正しくありません。\n「iss」という文字と、3つの数字を含めてください。\n(例: 3-4issR8, 3年4組issr8)");
+        
+        inputElement.value = '';
+        
+    } catch (e) {
+        showNativePopup("処理中にエラーが発生しました: " + e.message);
     }
 }
 
@@ -384,7 +412,7 @@ function renderTasks(tasks) {
     card.onclick = () => openDetailModal(task.課題id);
 
     card.innerHTML = `
-        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
                 onclick="toggleTaskStatus(event, '${task.課題id}')">
             ${isDone ? '完了' : '未完了'}
         </button>
@@ -464,12 +492,16 @@ async function submitTask() {
         return;
     }
 
+    // localStorage から userName を取得して格納（無ければ空文字）
+    const storedUsername = localStorage.getItem('userName') || '';
+
     const d = new Date(deadlineRaw);
     const formattedDeadline = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
     const payload = {
         action: 'add',
         className: currentClass,
-        task: { subject, title, detail, deadline: formattedDeadline }
+        // taskオブジェクトの同階層にusernameプロパティを追加（GAS側の引数に展開される形）
+        task: { subject, title, detail, deadline: formattedDeadline, username: storedUsername }
     };
 
     try {
