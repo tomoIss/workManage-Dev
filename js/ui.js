@@ -134,14 +134,23 @@ function closeNativePopup() {
 
 // --- 初期化 ---
 async function init() {
-    // 【新規追加】userNameキャッシュが無い場合は最優先で初期設定モーダルを表示
-    const cachedUsername = localStorage.getItem('userName');
-    if (!cachedUsername) {
-        document.getElementById('username-init-modal').style.display = 'flex';
-        // 背景クリックで閉じないように、既存のhandleOutsideClickの判定対象から除外されます
-        return; 
+    // 【新規ユーザー対応】userNameがなければ、入力が完了するまでここで処理をストップして待機
+    if (!localStorage.getItem('userName')) {
+        await new Promise((resolve) => {
+            document.getElementById('username-init-modal').style.display = 'flex';
+            
+            // 登録ボタン（またはフォームの送信）のクリックで待機を解除
+            const submitBtn = document.getElementById('username-init-submit-btn'); // 実際のボタンIDに合わせてください
+            submitBtn.addEventListener('click', () => {
+                submitInitialUsername(); // 既存のデータ保存処理を実行
+                resolve();               // 待機を解除して、これ以降の既存コードへ進める
+            }, { once: true });
+        });
     }
 
+    // -------------------------------------------------------------
+    // ↓ ここから下は「初期のコード（既存の流れ）」のままでOKです！
+    // -------------------------------------------------------------
     if (!currentClass) {
         showClassSelection(false);
     } else {
