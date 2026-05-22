@@ -190,17 +190,28 @@ async function fetchClassListOnly() {
     }
 }
 
+// --- クラス選択画面のボタン表示（フィルタリング強化） ---
 function updateClassSelectionButtons() {
     const btnContainer = document.getElementById('class-list-buttons');
     btnContainer.innerHTML = '';
 
     if (existingClasses.length > 0) {
         existingClasses.forEach(cls => {
-            if (['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(cls)) return;
+            const clsStr = String(cls);
+            
+            // 除外条件:
+            // 1. 特定の名前のシート
+            // 2. 空白データ
+            // 3. 日付形式（2026-03... のようなISO文字列）を除外
+            const isSystemSheet = ['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(clsStr);
+            const isIsoDate = /^\d{4}-\d{2}-\d{2}/.test(clsStr); // 日付形式の正規表現チェック
+
+            if (isSystemSheet || !clsStr.trim() || isIsoDate) return;
+
             const btn = document.createElement('button');
             btn.className = 'class-btn';
-            btn.innerText = cls;
-            btn.onclick = () => selectClass(cls);
+            btn.innerText = clsStr;
+            btn.onclick = () => selectClass(clsStr);
             btnContainer.appendChild(btn);
         });
     } else {
@@ -299,7 +310,7 @@ function getSchoolYearCode() {
     return `R${reiwaYear}`;
 }
 
-// クラス作成ボタンを押したときの処理
+// --- 新規クラス作成（重複チェックとセレクトボックス連携） ---
 async function createNewClass() {
     const online = await isOnline();
     if (!online) {
@@ -307,47 +318,36 @@ async function createNewClass() {
         return;
     }
 
-    // 選択された値を取得
+    // HTMLのセレクトボックスから値を取得
     const grade = document.getElementById('new-class-grade').value;
-    const cls = document.getElementById('new-class-class').value;
+    const clsNum = document.getElementById('new-class-class').value;
     const school = document.getElementById('new-class-school').value;
-    const yearCode = getSchoolYearCode(); // 動的に年度を取得（例: R8）
-
-    // 正規化されたクラス名を作成 (例: 3-4issR8)
-    const formattedClassName = `${grade}-${cls}${school}${yearCode}`;
+    
+    // クラス名の形式を整形 (例: 3-4issR8)
+    // ※末尾の R8 は以前の運用ルールに合わせて付与しています
+    const normalized = `${grade}-${clsNum}${school}R8`;
 
     try {
-        // 既存のクラス一覧（existingClasses）と比較
-        if (existingClasses.includes(formattedClassName)) {
-            showNativePopup(`既存のクラスが見つかりました。データに接続します。`);
-            selectClass(formattedClassName);
-            return;
-        }
-
-        // 該当しない（新しい）場合、サーバーに新規クラス作成をリクエスト
-        document.getElementById('status-msg').style.display = 'block';
-        document.getElementById('status-msg').innerText = '新規クラスを作成中...';
-
-        // ※ api.jsで定義している「クラス作成用API」を呼び出してください。
-        // ここでは仮に apiCreateClass という関数名、および以下のペイロード構造としています。
-        const result = await apiCreateClass({
-            action: 'createClass',
-            className: formattedClassName
+        // 既存のクラスリスト（existingClasses）から重複を確認
+        const isExisting = existingClasses.some(cls => {
+            if (!cls) return false;
+            // 念のため小文字・空白を揃えて比較
+            return String(cls).trim().toLowerCase() === normalized.toLowerCase();
         });
 
-        if (result && result.status === 'SUCCESS') {
-            showNativePopup(`新規クラス「${formattedClassName}」を作成しました。`);
-            // 最新のクラス一覧をサーバーから再取得して同期
-            await fetchClassListOnly();
-            // 新しく作ったクラスを選択状態にする
-            selectClass(formattedClassName);
+        if (isExisting) {
+            // すでに存在する場合は、作成せずそのまま接続
+            showNativePopup(`既存のクラス「${normalized}」が見つかりました。接続します。`);
         } else {
-            showNativePopup('クラスの作成に失敗しました: ' + (result ? result.status : 'エラー'));
+            // 存在しない場合は新規作成（旧来の selectClass で作成処理へ）
+            showNativePopup(`新規クラス「${normalized}」を作成します。`);
         }
+        
+        // 最終的な接続処理
+        selectClass(normalized);
+        
     } catch (e) {
         showNativePopup("処理中にエラーが発生しました: " + e.message);
-    } finally {
-        document.getElementById('status-msg').style.display = 'none';
     }
 }
 
