@@ -136,17 +136,11 @@ function closeNativePopup() {
 async function init() {
     // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
     if (!localStorage.getItem('userName')) {
-        // 1. まず背景にクラス選択画面を表示（キャンセル不可のfalseを渡す）
         showClassSelection(false);
-        // 2. その上に重なるように初期ユーザー登録モーダルを表示
         document.getElementById('username-init-modal').style.display = 'flex';
-        // 登録が完了するまで、これ以降の通常の初期化処理はストップ（早期リターン）
         return; 
     }
 
-    // -------------------------------------------------------------
-    // ↓ ここから下は「初期のコード（既存の流れ）」のままでOKです！
-    // -------------------------------------------------------------
     if (!currentClass) {
         showClassSelection(false);
     } else {
@@ -164,38 +158,24 @@ async function init() {
 }
 
 /**
- * 初回利用時のユーザー識別コード(userName)生成と保存（完全選択式版）
+ * 初回利用時のユーザー識別コード(userName)生成と保存
  */
 function submitInitialUsername() {
-    // 各セレクトボックスから値を取得
-    const grade = document.getElementById('init-grade').value;            // 例: "3"
-    const cls = document.getElementById('init-class').value;              // 例: "4"
-    const attendanceNo = document.getElementById('init-attendance').value;  // 例: "35"
-    const school = document.getElementById('init-school').value;          // 例: "iss"
+    const grade = document.getElementById('init-grade').value;
+    const cls = document.getElementById('init-class').value;
+    const attendanceNo = document.getElementById('init-attendance').value;
+    const school = document.getElementById('init-school').value;
     
-    // 【エラー回避ガード】HTMLに "init-backend-id" が無くてもエラーにならないように変更
     const backendIdElement = document.getElementById('init-backend-id');
-    const backendId = backendIdElement ? backendIdElement.value : '';    // 存在しなければ空文字にする
+    const backendId = backendIdElement ? backendIdElement.value : '';
 
-    // 1. ユーザー識別用の文字列を作成 (例: "3435issR8")
     const finalUserName = `${grade}${cls}${attendanceNo}${school}${backendId}`;
-    
-    // ローカルストレージにユーザー名を保存
     localStorage.setItem('userName', finalUserName);
 
-    // 2. クラス名の自動組み立てと保存 (例: "3-4issR8")
-    if (!localStorage.getItem(KEY_CLASS)) {
-        const autoClassName = `${grade}-${cls}${school}${backendId}`;
-        currentClass = autoClassName;
-        localStorage.setItem(KEY_CLASS, currentClass);
-    }
+    // ★【修正】ユーザーネームから勝手にクラス名を自動生成して保存する処理を完全に削除しました。
+    // 代わりに、背景にあるクラス選択画面（showClassSelection）でユーザーが自分で選ぶか作成するのを待ちます。
 
-    // 3. モーダルを非表示にして画面ヘッダー等を更新し、通常起動
     document.getElementById('username-init-modal').style.display = 'none';
-    updateHeader();
-    
-    // 再度initを呼び出すことで、次はuserNameが存在するため、通常の課題読み込みルートに進みます
-    init(); 
 }
 
 // クラスリストのみを取得して変数に格納する内部関数
@@ -249,7 +229,6 @@ async function showClassSelection(canCancel = true) {
     document.getElementById('new-class-input').disabled = false;
     document.querySelector('.new-class-btn').disabled = false;
 
-    // オフライン時はクラス変更を制限
     const online = await isOnline();
     if (!online) {
         btnContainer.innerHTML = '<div style="color: #ff6b6b; font-weight: bold; padding: 20px; text-align: center;">現在オフラインのため、クラスを切り替えできません。</div>';
@@ -267,7 +246,6 @@ async function showClassSelection(canCancel = true) {
         btnContainer.innerHTML = '<p>クラス一覧を読み込んでいます...</p>';
     }
 
-    // 最新のリストをバックグラウンドで取得して更新
     fetchClassListOnly()
         .then(() => {
             updateClassSelectionButtons();
@@ -283,7 +261,6 @@ async function showClassSelection(canCancel = true) {
         });
 }
 
-
 function selectClass(cls) {
     if (!cls) return;
     currentClass = cls;
@@ -293,6 +270,7 @@ function selectClass(cls) {
     loadTasks();
 }
 
+// ★【古い方法を維持】厳密なフォーマットチェックや自動置換が入る前の元のシンプルな処理に戻しました
 async function createNewClass() {
     const online = await isOnline();
     if (!online) {
@@ -306,79 +284,18 @@ async function createNewClass() {
         showNativePopup('クラス名を入力してください。');
         return;
     }
-    
-    // 1. 入力値の正規化 (全角数字の半角化、小文字統一、年・組をハイフンに置換)
-    let normalized = String(input).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-    }).toLowerCase();
-
-    normalized = normalized.replace(/年/g, '-').replace(/組/g, '');
-
-    // 2. 厳密なフォーマットチェック (ハイフンを含む3〜4桁のクラス識別 + 許可する学校コード)
-    // フロントの定数として管理可能な学校コード配列
-    const ALLOWED_SCHOOL_CODES = ['iss'];
-    
-    // 「数字1-2桁 + ハイフン + 数字1-2桁 + アルファベット1-3桁」にマッチさせる
-    const match = normalized.match(/^(\d{1,2}-\d{1,2})([a-z]{1,3})$/);
-
-    if (!match) {
-        showNativePopup("クラス名の形式が正しくありません。\n「学年-組」を4桁以内、かつ学校コードを入力してください。\n(例: 3-4iss, 1-10iss, 3年4組iss)");
-        return;
-    }
-
-    const classPart = match[1];  // 例: "3-4" や "1-10"
-    const schoolPart = match[2]; // 例: "iss"
-
-    // クラス識別部がハイフン含め4桁を超えているかチェック (例: 12-34 は5桁なのでエラー)
-    if (classPart.length > 4) {
-        showNativePopup("クラス指定（学年-組）の桁数が多すぎます。4桁以内に収めてください。\n(例: 1-10iss)");
-        return;
-    }
-
-    // 学校識別コードが有効なものかチェック
-    if (!ALLOWED_SCHOOL_CODES.includes(schoolPart)) {
-        showNativePopup(`未登録の学校コード「${schoolPart}」です。`);
-        return;
-    }
-
-    // 最終決定される「年号なし」のきれいな入力値 (例: 3-4iss)
-    const finalClassName = `${classPart}${schoolPart}`;
 
     try {
-        const isExisting = existingClasses.some(cls => {
-            if (!cls) return false;
-            
-            let checkCls = String(cls).replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
-                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-            }).toLowerCase();
-            
-            checkCls = checkCls.replace(/年/g, '-').replace(/組/g, '');
-            
-            // 既存リストにはバックエンド側で付与された「3-4issR8」などのフルネームが入っているため、
-            // 前半部分が一致するか、または完全に一致するかを検証します
-            return checkCls === finalClassName || checkCls.startsWith(finalClassName);
-        });
-
-        if (isExisting) {
-            // 既存クラスがあれば、そちらの既存データ名（年号付きフルネーム等）を優先して接続
-            const existingFullName = existingClasses.find(cls => {
-                let c = String(cls).toLowerCase().replace(/年/g, '-').replace(/組/g, '');
-                return c.startsWith(finalClassName);
-            });
+        // 元のシンプルな重複チェックと遷移
+        if (existingClasses.includes(input)) {
             showNativePopup(`既存のクラスが見つかりました。データに接続します。`);
-            selectClass(existingFullName || finalClassName);
-        } else {
-            // 完全新規であれば、年号が付与されていない状態の名前を送信（GAS側が受け取って自動でR8等を付与してシート生成します）
-            selectClass(finalClassName);
         }
-        
+        selectClass(input);
         inputElement.value = '';
-        
     } catch (e) {
         showNativePopup("処理中にエラーが発生しました: " + e.message);
     }
 }
-
 
 function closeClassSelection() {
     document.getElementById('class-selection-ui').style.display = 'none';
@@ -422,7 +339,6 @@ async function loadTasks() {
         if (result.status === 'SUCCESS') {
             currentTasks = result.tasks || [];
             saveCachedTasks(currentClass, currentTasks);
-            // 課題進捗用のキャッシュで古いものを削除
             cleanupDoneTasks(currentTasks);
             
             if (currentTasks.length === 0) {
@@ -460,7 +376,7 @@ function renderTasks(tasks) {
     card.onclick = () => openDetailModal(task.課題id);
 
     card.innerHTML = `
-        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
                 onclick="toggleTaskStatus(event, '${task.課題id}')">
             ${isDone ? '完了' : '未完了'}
         </button>
@@ -484,11 +400,10 @@ function closeModals() {
     document.getElementById('add-modal').style.display = 'none';
     document.getElementById('detail-modal').style.display = 'none';
 
-    // 0.5秒間、新しい操作を受け付けないようにする
     isModalClosing = true;
     setTimeout(() => {
         isModalClosing = false;
-    }, 500); // 500ミリ秒 = 0.5秒
+    }, 500);
 }
 
 async function openAddModal() {
@@ -540,7 +455,6 @@ async function submitTask() {
         return;
     }
 
-    // localStorage から userName を取得して格納（無ければ空文字）
     const storedUsername = localStorage.getItem('userName') || '';
 
     const d = new Date(deadlineRaw);
@@ -548,7 +462,6 @@ async function submitTask() {
     const payload = {
         action: 'add',
         className: currentClass,
-        // taskオブジェクトの同階層にusernameプロパティを追加（GAS側の引数に展開される形）
         task: { subject, title, detail, deadline: formattedDeadline, username: storedUsername }
     };
 
@@ -609,34 +522,28 @@ function formatDateTime(isoString) {
     return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-// --- 追加: 更新処理（ui.jsの末尾などへ） ---
 async function refreshTasks() {
     const icon = document.querySelector('.refresh-icon');
-    
-    // アイコンを回転させるアニメーションクラスを付与
     icon.classList.add('spinning');
     
     try {
-        await loadTasks(); // 既存のデータ取得関数を実行
+        await loadTasks();
     } finally {
-        // 0.5秒後にアニメーションクラスを除去（回転を止める）
         setTimeout(() => {
             icon.classList.remove('spinning');
         }, 500);
     }
 }
 
-// --- モーダルの背景クリックで閉じる ---
 const handleOutsideClick = (event) => {
     const detailModal = document.getElementById('detail-modal');
     const addModal = document.getElementById('add-modal');
 
-    // event.target（実際に触れた要素）が、モーダルの背景要素そのものであるか判定
     if (event.target === detailModal || event.target === addModal) {
         closeModals();
     }
 };
-//通常のクリック
+
 window.addEventListener('click',handleOutsideClick);
 window.addEventListener('touchstart', handleOutsideClick, { passive: true });
 
