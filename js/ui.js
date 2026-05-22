@@ -134,18 +134,14 @@ function closeNativePopup() {
 
 // --- 初期化 ---
 async function init() {
-    // 【新規ユーザー対応】userNameがなければ、入力が完了するまでここで処理をストップして待機
+    // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
     if (!localStorage.getItem('userName')) {
-        await new Promise((resolve) => {
-            document.getElementById('username-init-modal').style.display = 'flex';
-            
-            // 登録ボタン（またはフォームの送信）のクリックで待機を解除
-            const submitBtn = document.getElementById('username-init-submit-btn'); // 実際のボタンIDに合わせてください
-            submitBtn.addEventListener('click', () => {
-                submitInitialUsername(); // 既存のデータ保存処理を実行
-                resolve();               // 待機を解除して、これ以降の既存コードへ進める
-            }, { once: true });
-        });
+        // 1. まず背景にクラス選択画面を表示（キャンセル不可のfalseを渡す）
+        showClassSelection(false);
+        // 2. その上に重なるように初期ユーザー登録モーダルを表示
+        document.getElementById('username-init-modal').style.display = 'flex';
+        // 登録が完了するまで、これ以降の通常の初期化処理はストップ（早期リターン）
+        return; 
     }
 
     // -------------------------------------------------------------
@@ -165,7 +161,6 @@ async function init() {
         }
         loadTasks();
     }
-}
 
 /**
  * 初回利用時のユーザー識別コード(userName)生成と保存（完全選択式版）
@@ -176,7 +171,10 @@ function submitInitialUsername() {
     const cls = document.getElementById('init-class').value;              // 例: "4"
     const attendanceNo = document.getElementById('init-attendance').value;  // 例: "35"
     const school = document.getElementById('init-school').value;          // 例: "iss"
-    const backendId = document.getElementById('init-backend-id').value;    // 例: "R8"
+    
+    // 【エラー回避ガード】HTMLに "init-backend-id" が無くてもエラーにならないように変更
+    const backendIdElement = document.getElementById('init-backend-id');
+    const backendId = backendIdElement ? backendIdElement.value : '';    // 存在しなければ空文字にする
 
     // 1. ユーザー識別用の文字列を作成 (例: "3435issR8")
     const finalUserName = `${grade}${cls}${attendanceNo}${school}${backendId}`;
@@ -194,7 +192,9 @@ function submitInitialUsername() {
     // 3. モーダルを非表示にして画面ヘッダー等を更新し、通常起動
     document.getElementById('username-init-modal').style.display = 'none';
     updateHeader();
-    init();
+    
+    // 再度initを呼び出すことで、次はuserNameが存在するため、通常の課題読み込みルートに進みます
+    init(); 
 }
 
 // クラスリストのみを取得して変数に格納する内部関数
