@@ -492,7 +492,6 @@ function openDetailModal(id) {
     document.getElementById('detail-modal').style.display = 'flex';
 }
 
-// --- 登録・削除アクション ---
 async function submitTask() {
     const subject = document.getElementById('add-subject').value.trim();
     const title = document.getElementById('add-title').value.trim();
@@ -504,31 +503,50 @@ async function submitTask() {
         showNativePopup('オフライン中は課題の追加ができません。');
         return;
     }
+
+    // 基本入力チェック
     if (!subject || !title || !deadlineRaw) {
         showNativePopup('科目名、課題名、期限は必須です。');
         return;
     }
 
-    const storedUsername = localStorage.getItem('userName') || '';
+    // 【修正】localStorageから最新のuserNameを取得
+    const storedUsername = localStorage.getItem('userName');
+    if (!storedUsername) {
+        showNativePopup('ユーザー情報が消えています。再設定してください。');
+        init(); // 再度モーダルを出すためにinitを呼ぶ
+        return;
+    }
 
     const d = new Date(deadlineRaw);
     const formattedDeadline = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
+    
+    // ペイロード作成（GAS側の引数名 'username' に合わせる）
     const payload = {
         action: 'add',
         className: currentClass,
-        task: { subject, title, detail, deadline: formattedDeadline, username: storedUsername }
+        task: { 
+            subject: subject, 
+            title: title, 
+            detail: detail, 
+            deadline: formattedDeadline, 
+            username: storedUsername // ここで確実に付与
+        }
     };
 
     try {
         closeModals();
-        document.getElementById('status-msg').style.display = 'block';
-        document.getElementById('status-msg').innerText = "追加処理中...";
+        const statusMsg = document.getElementById('status-msg');
+        statusMsg.style.display = 'block';
+        statusMsg.innerText = "追加処理中...";
+        
         const result = await apiAddTask(payload);
+        
         if (result.status === 'SUCCESS') {
             loadTasks();
         } else {
             showNativePopup("追加エラー: " + result.status);
-            document.getElementById('status-msg').style.display = 'none';
+            statusMsg.style.display = 'none';
         }
     } catch (e) {
         showNativePopup("通信エラー: " + e.message);
