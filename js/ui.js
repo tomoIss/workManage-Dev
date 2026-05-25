@@ -165,15 +165,9 @@ function submitInitialUsername() {
     const cls = document.getElementById('init-class').value;
     const attendanceNo = document.getElementById('init-attendance').value;
     const school = document.getElementById('init-school').value;
-    
-    const backendIdElement = document.getElementById('init-backend-id');
-    const backendId = backendIdElement ? backendIdElement.value : '';
 
-    const finalUserName = `${grade}${cls}${attendanceNo}${school}${backendId}`;
+    const finalUserName = grade+cls+attendanceNo+school;
     localStorage.setItem('userName', finalUserName);
-
-    // ★【修正】ユーザーネームから勝手にクラス名を自動生成して保存する処理を完全に削除しました。
-    // 代わりに、背景にあるクラス選択画面（showClassSelection）でユーザーが自分で選ぶか作成するのを待ちます。
 
     document.getElementById('username-init-modal').style.display = 'none';
 }
