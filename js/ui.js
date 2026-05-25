@@ -1,5 +1,7 @@
 const KEY_CLASS = 'dev_currentClass';
 const KEY_TASKS_PREFIX = 'dev_cachedTasks_';
+const USER_NAME = 'dev_userName';
+const DONE_TASKS = 'dev_doneTasks';
 
 let currentClass = localStorage.getItem(KEY_CLASS) || '';
 let currentTasks = [];
@@ -47,7 +49,7 @@ function getTaskFingerprint(task) {
 
 // 完了リストの取得
 function getDoneTasks() {
-    return JSON.parse(localStorage.getItem('dev_done_tasks') || '[]');
+    return JSON.parse(localStorage.getItem(DONE_TASKS) || '[]');
 }
 
 /**
@@ -65,7 +67,7 @@ function cleanupDoneTasks(latestTasks) {
     const cleanedList = doneList.filter(fingerprint => validFingerprints.includes(fingerprint));
 
     // ストレージを更新
-    localStorage.setItem('dev_done_tasks', JSON.stringify(cleanedList));
+    localStorage.setItem(DONE_TASKS, JSON.stringify(cleanedList));
     console.log(`キャッシュを整理しました。保持中: ${cleanedList.length}件`);
 }
 
@@ -85,7 +87,7 @@ function toggleTaskStatus(event, taskId) {
         doneList.push(fingerprint);
     }
 
-    localStorage.setItem('dev_done_tasks', JSON.stringify(doneList));
+    localStorage.setItem(DONE_TASKS, JSON.stringify(doneList));
     renderTasks(currentTasks); // 画面を即座に更新
 }
 
@@ -135,7 +137,7 @@ function closeNativePopup() {
 // --- 初期化 ---
 async function init() {
     // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
-    if (!localStorage.getItem('userName')) {
+    if (!localStorage.getItem(USER_NAME)) {
         showClassSelection(false);
         document.getElementById('username-init-modal').style.display = 'flex';
         return; 
@@ -167,7 +169,7 @@ function submitInitialUsername() {
     const school = document.getElementById('init-school').value;
 
     const finalUserName = grade+cls+attendanceNo+school;
-    localStorage.setItem('userName', finalUserName);
+    localStorage.setItem(USER_NAME, finalUserName);
 
     document.getElementById('username-init-modal').style.display = 'none';
 }
@@ -316,10 +318,11 @@ async function createNewClass() {
     const grade = document.getElementById('new-class-grade').value;
     const clsNum = document.getElementById('new-class-class').value;
     const school = document.getElementById('new-class-school').value;
+    const year = getSchoolYearCode();
     
     // クラス名の形式を整形 (例: 3-4issR8)
     // ※末尾の R8 は以前の運用ルールに合わせて付与しています
-    const normalized = `${grade}-${clsNum}${school}R8`;
+    const normalized = `${grade}-${clsNum}${school}${year}`;
 
     try {
         // 既存のクラスリスト（existingClasses）から重複を確認
@@ -412,34 +415,36 @@ async function loadTasks() {
 // 課題のデータを表示
 function renderTasks(tasks) {
     const container = document.getElementById('task-list');
+    const statusMsg = document.getElementById('status-msg');
     container.innerHTML = '';
+    
+    if (tasks.length === 0) {
+        statusMsg.style.display = 'block';
+        statusMsg.innerText = '現在、課題はありません。';
+        return;
+    }
+
     const doneList = getDoneTasks();
 
     tasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
-    
-    const card = document.createElement('div');
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        card.onclick = () => openDetailModal(task.課題id);
 
-    card.className = 'task-card';
-    card.onclick = () => openDetailModal(task.課題id);
-
-    card.innerHTML = `
-        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
-                onclick="toggleTaskStatus(event, '${task.課題id}')">
-            ${isDone ? '完了' : '未完了'}
-        </button>
-
-        <div class="subject">${task.教科 || "不明"}</div>
-        
-        <div class="title">${task.課題名 || "無題の課題"}</div>
-        
-        <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
-        
-        <div class="task-footer">
-            <div class="deadline">${formatDateTime(task.期限)}</div>
-        </div>
-    `;
-    container.appendChild(card);
+        card.innerHTML = `
+            <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+                    onclick="toggleTaskStatus(event, '${task.課題id}')">
+                ${isDone ? '完了' : '未完了'}
+            </button>
+            <div class="subject">${task.教科 || "不明"}</div>
+            <div class="title">${task.課題名 || "無題の課題"}</div>
+            <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
+            <div class="task-footer">
+                <div class="deadline">${formatDateTime(task.期限)}</div>
+            </div>
+        `;
+        container.appendChild(card);
     });
 }
 
@@ -505,7 +510,7 @@ async function submitTask() {
     }
 
     // 【修正】localStorageから最新のuserNameを取得
-    const storedUsername = localStorage.getItem('userName');
+    const storedUsername = localStorage.getItem(USER_NAME);
     if (!storedUsername) {
         showNativePopup('ユーザー情報が消えています。再設定してください。');
         init(); // 再度モーダルを出すためにinitを呼ぶ
@@ -524,7 +529,7 @@ async function submitTask() {
             title: title, 
             detail: detail, 
             deadline: formattedDeadline, 
-            username: storedUsername // ここで確実に付与
+            username: storedUsername
         }
     };
 
