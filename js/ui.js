@@ -415,36 +415,34 @@ async function loadTasks() {
 // 課題のデータを表示
 function renderTasks(tasks) {
     const container = document.getElementById('task-list');
-    const statusMsg = document.getElementById('status-msg');
     container.innerHTML = '';
-    
-    if (tasks.length === 0) {
-        statusMsg.style.display = 'block';
-        statusMsg.innerText = '現在、課題はありません。';
-        return;
-    }
-
     const doneList = getDoneTasks();
 
     tasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
-        const card = document.createElement('div');
-        card.className = 'task-card';
-        card.onclick = () => openDetailModal(task.課題id);
+    
+    const card = document.createElement('div');
 
-        card.innerHTML = `
-            <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
-                    onclick="toggleTaskStatus(event, '${task.課題id}')">
-                ${isDone ? '完了' : '未完了'}
-            </button>
-            <div class="subject">${task.教科 || "不明"}</div>
-            <div class="title">${task.課題名 || "無題の課題"}</div>
-            <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
-            <div class="task-footer">
-                <div class="deadline">${formatDateTime(task.期限)}</div>
-            </div>
-        `;
-        container.appendChild(card);
+    card.className = 'task-card';
+    card.onclick = () => openDetailModal(task.課題id);
+
+    card.innerHTML = `
+        <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
+                onclick="toggleTaskStatus(event, '${task.課題id}')">
+            ${isDone ? '完了' : '未完了'}
+        </button>
+
+        <div class="subject">${task.教科 || "不明"}</div>
+        
+        <div class="title">${task.課題名 || "無題の課題"}</div>
+        
+        <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
+        
+        <div class="task-footer">
+            <div class="deadline">${formatDateTime(task.期限)}</div>
+        </div>
+    `;
+    container.appendChild(card);
     });
 }
 
@@ -540,7 +538,6 @@ async function submitTask() {
         statusMsg.innerText = "追加処理中...";
         
         const result = await apiAddTask(payload);
-        
         if (result.status === 'SUCCESS') {
             loadTasks();
         } else {
