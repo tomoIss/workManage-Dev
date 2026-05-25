@@ -161,10 +161,10 @@ async function init() {
  * 初回利用時のユーザー識別コード(userName)生成と保存
  */
 function submitInitialUsername() {
-    const grade = document.getElementById('init-grade').value;
-    const cls = document.getElementById('init-class').value;
-    const attendanceNo = document.getElementById('init-attendance').value;
-    const school = document.getElementById('init-school').value;
+    const grade = document.getElementById('init-grade');
+    const cls = document.getElementById('init-class');
+    const attendanceNo = document.getElementById('init-attendance');
+    const school = document.getElementById('init-school');
 
     const finalUserName = grade+cls+attendanceNo+school;
     localStorage.setItem('userName', finalUserName);
