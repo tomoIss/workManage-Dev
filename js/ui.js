@@ -6,6 +6,7 @@ const DONE_TASKS = 'dev_doneTasks';
 let currentClass = localStorage.getItem(KEY_CLASS) || '';
 let currentTasks = [];
 let existingClasses = []; // 既存のクラス一覧を保持する変数
+let userName = localStorage.getItem(USER_NAME) || '';
 
 let isModalClosing = false;
 
@@ -137,7 +138,7 @@ function closeNativePopup() {
 // --- 初期化 ---
 async function init() {
     // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
-    if (!localStorage.getItem(USER_NAME)) {
+    if (!userName) {
         showClassSelection(false);
         document.getElementById('username-init-modal').style.display = 'flex';
         return; 
@@ -168,8 +169,8 @@ function submitInitialUsername() {
     const attendanceNo = document.getElementById('init-attendance').value;
     const school = document.getElementById('init-school').value;
 
-    const finalUserName = grade+cls+attendanceNo+school;
-    localStorage.setItem(USER_NAME, finalUserName);
+    userName = grade+cls+attendanceNo+school;
+    localStorage.setItem(USER_NAME, userName);
 
     document.getElementById('username-init-modal').style.display = 'none';
 }
@@ -518,10 +519,8 @@ async function submitTask() {
         showNativePopup('科目名、課題名、期限は必須です。');
         return;
     }
-
-    // 【修正】localStorageから最新のuserNameを取得
-    const storedUsername = localStorage.getItem(USER_NAME);
-    if (!storedUsername) {
+    
+    if (!username) {
         showNativePopup('ユーザー情報が消えています。再設定してください。');
         init(); // 再度モーダルを出すためにinitを呼ぶ
         return;
@@ -539,7 +538,7 @@ async function submitTask() {
             title: title, 
             detail: detail, 
             deadline: formattedDeadline, 
-            username: storedUsername
+            userName: userName
         }
     };
 
@@ -575,7 +574,12 @@ async function confirmDelete(id) {
         cancelText: 'キャンセル',
         onConfirm: async () => {
             closeModals();
-            const payload = { action: 'delete', className: currentClass, id: id };
+            const payload = {
+                action: 'delete',
+                className: currentClass,
+                id: id
+                userName: userName
+            };
 
             try {
                 document.getElementById('status-msg').style.display = 'block';
