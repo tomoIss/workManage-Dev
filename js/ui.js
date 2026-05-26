@@ -520,7 +520,7 @@ async function submitTask() {
         return;
     }
     
-    if (!username) {
+    if (!userName) {
         showNativePopup('ユーザー情報が消えています。再設定してください。');
         init(); // 再度モーダルを出すためにinitを呼ぶ
         return;
