@@ -140,8 +140,7 @@ async function init() {
     // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
     if (!userName) {
         showClassSelection(false);
-        document.getElementById('username-init-modal').style.display = 'flex';
-        return; 
+        document.getElementById('username-init-modal').style.display = 'flex'; 
     }
 
     if (!currentClass) {
@@ -173,6 +172,8 @@ function submitInitialUsername() {
     localStorage.setItem(USER_NAME, userName);
 
     document.getElementById('username-init-modal').style.display = 'none';
+
+    return;
 }
 
 // クラスリストのみを取得して変数に格納する内部関数
