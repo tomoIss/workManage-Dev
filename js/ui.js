@@ -430,7 +430,7 @@ function renderTasks(tasks) {
         return;
     }
 
-    vadidTasks.forEach(task => {
+    validTasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
     
     const card = document.createElement('div');
