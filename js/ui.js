@@ -141,6 +141,8 @@ async function init() {
     if (!userName) {
         showClassSelection(false);
         document.getElementById('username-init-modal').style.display = 'flex'; 
+
+        return;
     }
 
     if (!currentClass) {
@@ -173,7 +175,7 @@ function submitInitialUsername() {
 
     document.getElementById('username-init-modal').style.display = 'none';
 
-    return;
+    init();
 }
 
 // クラスリストのみを取得して変数に格納する内部関数
@@ -578,7 +580,7 @@ async function confirmDelete(id) {
             const payload = {
                 action: 'delete',
                 className: currentClass,
-                id: id
+                id: id,
                 userName: userName
             };
 
