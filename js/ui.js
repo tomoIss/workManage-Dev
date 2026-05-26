@@ -141,7 +141,6 @@ async function init() {
     if (!userName) {
         showClassSelection(false);
         document.getElementById('username-init-modal').style.display = 'flex'; 
-
         return;
     }
 
