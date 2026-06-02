@@ -431,9 +431,11 @@ function getRemainingTime(isoString) {
         const diffHours = diffMs / (1000 * 60 * 60);
 
         if (diffHours < 24) {
-            // 24時間未満：時:分
-            const hours = Math.floor(diffHours);
-            const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+           // 24時間未満：時:分（分を秒切り上げ）
+            const totalMinutes = Math.ceil(diffMs / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
             const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             return { text: `残り ${timeStr}`, isUrgent: true };
         } else {
