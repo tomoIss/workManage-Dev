@@ -179,12 +179,35 @@ header {
     -webkit-box-orient: vertical;
 }
 
+/* フッターをフレックスボックス化し、区切り線をこちらに集約 */
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 2px dashed rgba(255, 255, 255, 0.3);
+    padding-top: 10px;
+    margin-top: auto;
+}
+
+/* 残り時間（左側）のスタイル設定 */
+.time-left {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--text-white); /* 24時間以上は白 */
+    text-align: left;
+}
+
+/* 24時間未満（黒板のピンク・赤チョークに近い色） */
+.time-left.urgent {
+    color: #FF6B8B;
+}
+
+/* 締切日（右側）のスタイル微調整 */
 .deadline {
     font-size: 1.5rem;
     font-weight: 900;
     text-align: right;
-    border-top: 2px dashed rgba(255, 255, 255, 0.3);
-    padding-top: 10px;
+    padding-top: 0;
 }
 
 /* --- Status Message --- */
@@ -492,7 +515,6 @@ header {
 }
 
 /* --- Media Queries for Responsive Header --- */
-
 @media (min-width: 481px) {
     /* PC/タブレット画面: 更新ボタンをヘッダーの絶対中央に配置 */
     .refresh-btn {
@@ -516,13 +538,11 @@ header {
         max-width: 100%;
     }
 
-    /* ラベルと更新ボタンの親（header）がflex-direction: columnなので、
-       位置を制御するためにmenu-labelを文字幅に留める */
     .menu-label {
-        width: auto; /* 異様に長く伸びるのを防ぐ */
-        max-width: calc(100% - 70px); /* ボタンのスペース分を確保 */
-        align-self: flex-start; /* 左端に配置 */
-        margin-right: auto; /* 右側にスペースを開ける */
+        width: auto;
+        max-width: calc(100% - 70px);
+        align-self: flex-start;
+        margin-right: auto;
     }
 
     .refresh-btn {
@@ -531,11 +551,10 @@ header {
         right: 0;
         width: 55px;
         height: 55px;
-        /* absoluteを使うことでmenu-labelの幅に影響を与えず右上に固定 */
     }
 
     .add-btn {
-        align-self: stretch; /* 追加ボタンは横いっぱい */
+        align-self: stretch;
         text-align: center;
         margin-top: 5px;
     }
@@ -556,23 +575,21 @@ header {
 
 /* タスクの進捗の切り替えボタン */
 .status-toggle-btn {
-    /* ここが重要！カードの右上に固定します */
     position: absolute; 
     top: 15px;
     right: 15px;
-
     font-family: inherit;
-    font-size: 0.75rem; /* 少し小さくしてスッキリさせます */
+    font-size: 0.75rem;
     font-weight: 900;
     padding: 4px 10px;
-    border-radius: 12px; /* 少し角丸を抑えてボタンらしく */
+    border-radius: 12px;
     border: 2px solid #333;
     cursor: pointer;
     background-color: #fff;
     color: #333;
     box-shadow: 2px 2px 0px #000;
     transition: all 0.1s;
-    z-index: 5; /* 文字より手前に表示 */
+    z-index: 5;
 }
 
 /* 完了状態のボタン色 */
@@ -586,8 +603,3 @@ header {
     transform: translate(1px, 1px);
     box-shadow: 1px 1px 0px #000;
 }
-
-
-
-
-
