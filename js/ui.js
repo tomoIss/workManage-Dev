@@ -417,33 +417,32 @@ async function loadTasks() {
 
 // 残り時間を計算するヘルパー関数
 function getRemainingTime(isoString) {
-        if (!isoString) return { text: '', isUrgent: false };
-        const deadline = new Date(isoString);
-        if (isNaN(deadline.getTime())) return { text: '', isUrgent: false };
+    if (!isoString) return { text: '', isUrgent: false };
+    const deadline = new Date(isoString);
+    if (isNaN(deadline.getTime())) return { text: '', isUrgent: false };
 
-        const now = new Date();
-        const diffMs = deadline - now;
+    const now = new Date();
+    const diffMs = deadline - now;
 
-        if (diffMs <= 0) {
-            return { text: '期限切れ', isUrgent: true };
-        }
-
-        const diffHours = diffMs / (1000 * 60 * 60);
-
-        if (diffHours < 24) {
-           // 24時間未満：時:分（分を秒切り上げ）
-            const totalMinutes = Math.ceil(diffMs / (1000 * 60));
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-
-            const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-            return { text: `残り ${timeStr}`, isUrgent: true };
-        } else {
-            // 24時間以上：一日単位
-            const days = Math.floor(diffHours / 24);
-            return { text: `残り ${days}日`, isUrgent: false };
-        }
+    if (diffMs <= 0) {
+        return { text: '期限切れ', isUrgent: true };
     }
+
+    // 残り総分数（Math.ceilで秒単位を切り上げ）
+    const totalMinutes = Math.ceil(diffMs / (1000 * 60));
+
+    if (totalMinutes < 60 * 24) {
+        // 24時間未満：時:分
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        return { text: `残り ${timeStr}`, isUrgent: true };
+    } else {
+        // 24時間以上：一日単位
+        const days = Math.floor(totalMinutes / (60 * 24));
+        return { text: `残り ${days}日`, isUrgent: false };
+    }
+}
 
 // 課題のデータを表示
 function renderTasks(tasks) {
