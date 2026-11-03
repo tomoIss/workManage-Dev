@@ -1,3 +1,5 @@
+const API_URL = "https://workmanagebackend.25tomo.f5.si";
+
 const KEY_CLASS = 'dev_currentClass';
 const KEY_TASKS_PREFIX = 'dev_cachedTasks_';
 const USER_NAME = 'dev_userName';
@@ -10,11 +12,97 @@ let userName = localStorage.getItem(USER_NAME) || '';
 
 let isModalClosing = false;
 
-// オフライン検知を改善する関数
+// ==========================================
+// API 通信関数レイヤー (Javaバックエンド連携)
+// ==========================================
+
+async function fetchWithRetry(url, options = {}, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) return response;
+            throw new Error(`HTTP ${response.status}`);
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            const delay = Math.random() * 2000 + 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
+// クラス一覧取得 (GET /classList)
+async function apiGetClassList() {
+    const res = await fetchWithRetry(`${API_URL}/classList?t=${Date.now()}`, {
+        method: "GET",
+        mode: "cors"
+    });
+    return await res.json();
+}
+
+// 新規クラス追加 (POST /classList)
+async function apiCreateClass(className) {
+    const res = await fetchWithRetry(`${API_URL}/classList`, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ className: className })
+    });
+    return await res.json();
+}
+
+// 課題一覧取得 (GET /work/{class})
+async function apiGetTasks(className) {
+    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}?t=${Date.now()}`, {
+        method: "GET",
+        mode: "cors"
+    });
+    return await res.json();
+}
+
+// 課題追加 (POST /work/{class})
+async function apiAddTask(className, taskData) {
+    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}`, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData)
+    });
+    return await res.json();
+}
+
+// 課題削除 (DELETE /work/{class}/{id})
+async function apiDeleteTask(className, id) {
+    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        mode: "cors"
+    });
+    return res.ok;
+}
+
+// ==========================================
+// データ正規化ヘルパー (Java <-> フロントのキー変換)
+// ==========================================
+function normalizeTask(task) {
+    if (!task) return null;
+    return {
+        課題id: task.id ?? task.課題id,
+        className: task.className,
+        教科: task.subject ?? task.教科,
+        課題名: task.title ?? task.課題名,
+        詳細: task.description ?? task.詳細,
+        期限: task.date ?? task.期限,
+        作成日時: task.createAt ?? task.作成日時,
+        追加者: task.createBy ?? task.追加者
+    };
+}
+
+// ==========================================
+// アプリケーションロジック
+// ==========================================
+
 async function isOnline() {
     if (!navigator.onLine) return false;
     try {
-        // 小さなリクエストで実際の接続を確認
         const response = await fetch('./icon/icon-192.jpg', { method: 'HEAD', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
         return response.ok;
     } catch {
@@ -24,7 +112,7 @@ async function isOnline() {
 
 function loadCachedTasks(className) {
     try {
-        const raw = localStorage.getItem(KEY_TASKS_PREFIX+className);
+        const raw = localStorage.getItem(KEY_TASKS_PREFIX + className);
         if (!raw) return [];
         const cached = JSON.parse(raw);
         return Array.isArray(cached) ? cached : [];
@@ -42,39 +130,28 @@ function saveCachedTasks(className, tasks) {
     }
 }
 
-// 課題を一意に特定する指紋（ID+教科+課題名+期限）
 function getTaskFingerprint(task) {
     const deadline = task.期限 ? new Date(task.期限).getTime() : 'no-deadline';
     return `${task.課題id}-${task.教科}-${task.課題名}-${deadline}`;
 }
 
-// 完了リストの取得
 function getDoneTasks() {
     return JSON.parse(localStorage.getItem(DONE_TASKS) || '[]');
 }
 
-/**
- * 現在存在しない課題の完了キャッシュを削除する
- * @param {Array} latestTasks - サーバーから取得した最新の課題リスト
- */
 function cleanupDoneTasks(latestTasks) {
     const doneList = getDoneTasks();
     if (doneList.length === 0) return;
 
-    // 最新の課題リストから、存在するすべての指紋を取得
     const validFingerprints = latestTasks.map(task => getTaskFingerprint(task));
-
-    // 今の完了リストの中で「最新リストに存在するもの」だけを残す
     const cleanedList = doneList.filter(fingerprint => validFingerprints.includes(fingerprint));
 
-    // ストレージを更新
     localStorage.setItem(DONE_TASKS, JSON.stringify(cleanedList));
     console.log(`キャッシュを整理しました。保持中: ${cleanedList.length}件`);
 }
 
-// ステータス切り替え（ボタンから直接呼ばれる）
 function toggleTaskStatus(event, taskId) {
-    event.stopPropagation(); // 詳細画面が開くのを防ぐ
+    event.stopPropagation();
 
     const task = currentTasks.find(t => t.課題id == taskId);
     if (!task) return;
@@ -89,7 +166,7 @@ function toggleTaskStatus(event, taskId) {
     }
 
     localStorage.setItem(DONE_TASKS, JSON.stringify(doneList));
-    renderTasks(currentTasks); // 画面を即座に更新
+    renderTasks(currentTasks);
 }
 
 function showNativePopup(message, options = {}) {
@@ -137,7 +214,6 @@ function closeNativePopup() {
 
 // --- 初期化 ---
 async function init() {
-    // 【新規ユーザー対応】userNameのキャッシュがなければ、初期設定フローへ
     if (!userName) {
         showClassSelection(false);
         document.getElementById('username-init-modal').style.display = 'flex'; 
@@ -160,28 +236,28 @@ async function init() {
     }
 }
 
-/**
- * 初回利用時のユーザー識別コード(userName)生成と保存
- */
 function submitInitialUsername() {
     const grade = document.getElementById('init-grade').value;
     const cls = document.getElementById('init-class').value;
     const attendanceNo = document.getElementById('init-attendance').value;
     const school = document.getElementById('init-school').value;
 
-    userName = grade+cls+attendanceNo+school;
+    userName = grade + cls + attendanceNo + school;
     localStorage.setItem(USER_NAME, userName);
 
     document.getElementById('username-init-modal').style.display = 'none';
-
     init();
 }
 
-// クラスリストのみを取得して変数に格納する内部関数
+// クラスリストを取得
 async function fetchClassListOnly() {
     try {
-        const data = await apiGetClassList();
-        existingClasses = data.classes || [];
+        const res = await apiGetClassList();
+        // {"status":"SUCCESS", "data": {"classes": [...]}} またはフォールバック
+        const list = res?.data?.classes || res?.classes || res?.data || [];
+        
+        // オブジェクト配列 [{"className": "1-1issR8"}] の場合は文字列配列へ正規化
+        existingClasses = list.map(item => typeof item === 'object' && item !== null ? (item.className || item.id) : item);
         return existingClasses;
     } catch (e) {
         console.error("クラスリストの取得に失敗しました", e);
@@ -189,7 +265,6 @@ async function fetchClassListOnly() {
     }
 }
 
-// --- クラス選択画面のボタン表示（フィルタリング強化） ---
 function updateClassSelectionButtons() {
     const btnContainer = document.getElementById('class-list-buttons');
     btnContainer.innerHTML = '';
@@ -197,15 +272,7 @@ function updateClassSelectionButtons() {
     if (existingClasses.length > 0) {
         existingClasses.forEach(cls => {
             const clsStr = String(cls);
-            
-            // 除外条件:
-            // 1. 特定の名前のシート
-            // 2. 空白データ
-            // 3. 日付形式（2026-03... のようなISO文字列）を除外
-            const isSystemSheet = ['クラスリスト', '課題リストテンプレート', 'スクリプトログ'].includes(clsStr);
-            const isIsoDate = /^\d{4}-\d{2}-\d{2}/.test(clsStr); // 日付形式の正規表現チェック
-
-            if (isSystemSheet || !clsStr.trim() || isIsoDate) return;
+            if (!clsStr.trim()) return;
 
             const btn = document.createElement('button');
             btn.className = 'class-btn';
@@ -222,7 +289,6 @@ function updateHeader() {
     document.getElementById('header-class-name').innerHTML = `${currentClass || '未設定'}<br>課題リストDev`;
 }
 
-// --- クラス選択関連 ---
 async function showClassSelection(canCancel = true) {
     const ui = document.getElementById('class-selection-ui');
     const loading = document.getElementById('loading-ui');
@@ -237,7 +303,6 @@ async function showClassSelection(canCancel = true) {
     const btnContainer = document.getElementById('class-list-buttons');
     btnContainer.innerHTML = '';
 
-    // セレクトボックスとボタンの要素を取得
     const gradeSel = document.getElementById('new-class-grade');
     const classSel = document.getElementById('new-class-class');
     const schoolSel = document.getElementById('new-class-school');
@@ -257,7 +322,6 @@ async function showClassSelection(canCancel = true) {
         return;
     }
 
-    // オンライン時は有効化
     if (gradeSel) gradeSel.disabled = false;
     if (classSel) classSel.disabled = false;
     if (schoolSel) schoolSel.disabled = false;
@@ -270,9 +334,7 @@ async function showClassSelection(canCancel = true) {
     }
 
     fetchClassListOnly()
-        .then(() => {
-            updateClassSelectionButtons();
-        })
+        .then(() => updateClassSelectionButtons())
         .catch(() => {
             if (existingClasses.length === 0) {
                 btnContainer.innerHTML = '<p>クラス一覧の取得に失敗しました。</p>';
@@ -293,23 +355,18 @@ function selectClass(cls) {
     loadTasks();
 }
 
-// 学校の年度ベース（令和）を計算して「R8」などの文字列を返すヘルパー関数
 function getSchoolYearCode() {
     const now = new Date();
     let year = now.getFullYear();
-    const month = now.getMonth() + 1; // 1〜12
-
-    // 1月〜3月は「前年度」扱いにする
+    const month = now.getMonth() + 1;
     if (month >= 1 && month <= 3) {
         year -= 1;
     }
-
-    // 令和の計算（西暦から2018を引く。2026年なら 2026 - 2018 = 8）
     const reiwaYear = year - 2018;
     return `R${reiwaYear}`;
 }
 
-// --- 新規クラス作成（重複チェックとセレクトボックス連携） ---
+// 新規クラス作成
 async function createNewClass() {
     const online = await isOnline();
     if (!online) {
@@ -317,37 +374,27 @@ async function createNewClass() {
         return;
     }
 
-    // HTMLのセレクトボックスから値を取得
     const grade = document.getElementById('new-class-grade').value;
     const clsNum = document.getElementById('new-class-class').value;
     const school = document.getElementById('new-class-school').value;
     const year = getSchoolYearCode();
     
-    // クラス名の形式を整形 (例: 3-4issR8)
-    // ※末尾の R8 は以前の運用ルールに合わせて付与しています
     const normalized = `${grade}-${clsNum}${school}${year}`;
 
     try {
-        // 既存のクラスリスト（existingClasses）から重複を確認
-        const isExisting = existingClasses.some(cls => {
-            if (!cls) return false;
-            // 念のため小文字・空白を揃えて比較
-            return String(cls).trim().toLowerCase() === normalized.toLowerCase();
-        });
+        const isExisting = existingClasses.some(cls => String(cls).trim().toLowerCase() === normalized.toLowerCase());
 
         if (isExisting) {
-            // すでに存在する場合は、作成せずそのまま接続
             showNativePopup(`既存のクラス「${normalized}」が見つかりました。接続します。`);
+            selectClass(normalized);
         } else {
-            // 存在しない場合は新規作成（旧来の selectClass で作成処理へ）
-            showNativePopup(`新規クラス「${normalized}」を作成します。`);
+            // サーバーに登録
+            await apiCreateClass(normalized);
+            showNativePopup(`新規クラス「${normalized}」を作成しました。`);
+            selectClass(normalized);
         }
-        
-        // 最終的な接続処理
-        selectClass(normalized);
-        
     } catch (e) {
-        showNativePopup("処理中にエラーが発生しました: " + e.message);
+        showNativePopup("クラス登録エラー: " + e.message);
     }
 }
 
@@ -359,7 +406,7 @@ function promptClassChange() {
     showClassSelection(true);
 }
 
-// --- 課題の読み込みと描画 ---
+// 課題の読み込み
 async function loadTasks() {
     if (!currentClass) {
         await showClassSelection(false);
@@ -381,9 +428,7 @@ async function loadTasks() {
         return;
     }
 
-    if (!online) {
-        return;
-    }
+    if (!online) return;
 
     statusMsg.innerText = 'チョークで書き込み中...';
 
@@ -391,7 +436,10 @@ async function loadTasks() {
         const result = await apiGetTasks(currentClass);
 
         if (result.status === 'SUCCESS') {
-            currentTasks = result.tasks || [];
+            // {"status":"SUCCESS", "data": {"work": [...]}} から抽出して正規化
+            const rawTasks = result?.data?.work || result?.work || result?.tasks || [];
+            currentTasks = rawTasks.map(normalizeTask).filter(Boolean);
+
             saveCachedTasks(currentClass, currentTasks);
             cleanupDoneTasks(currentTasks);
             
@@ -415,7 +463,6 @@ async function loadTasks() {
     }
 }
 
-// 残り時間を計算するヘルパー関数
 function getRemainingTime(isoString) {
     if (!isoString) return { text: '', isUrgent: false };
     const deadline = new Date(isoString);
@@ -428,31 +475,24 @@ function getRemainingTime(isoString) {
         return { text: '期限切れ', isUrgent: true };
     }
 
-    // 残り総分数（Math.ceilで秒単位を切り上げ）
     const totalMinutes = Math.ceil(diffMs / (1000 * 60));
-
     if (totalMinutes < 60 * 24) {
-        // 24時間未満：時:分
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
         const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         return { text: `残り ${timeStr}`, isUrgent: true };
     } else {
-        // 24時間以上：一日単位
         const days = Math.floor(totalMinutes / (60 * 24));
         return { text: `残り ${days}日`, isUrgent: false };
     }
 }
 
-// 課題のデータを表示
 function renderTasks(tasks) {
     const container = document.getElementById('task-list');
     container.innerHTML = '';
     const doneList = getDoneTasks();
     
-    // 空のオブジェクトや、ID・教科・課題名がすべて空の無効なデータを弾く
     const validTasks = tasks.filter(task => task && (task.課題id || task.教科 || task.課題名));
-    // 有効な課題が1つもない場合はメッセージを表示してカード作成を終了する
     if (validTasks.length === 0) {
         const statusMsg = document.getElementById('status-msg');
         if (statusMsg) {
@@ -464,10 +504,9 @@ function renderTasks(tasks) {
 
     validTasks.forEach(task => {
         const isDone = doneList.includes(getTaskFingerprint(task));
-        const remaining = getRemainingTime(task.期限); // 残り時間を取得
+        const remaining = getRemainingTime(task.期限);
     
         const card = document.createElement('div');
-
         card.className = 'task-card';
         card.onclick = () => openDetailModal(task.課題id);
 
@@ -476,13 +515,9 @@ function renderTasks(tasks) {
                     onclick="toggleTaskStatus(event, '${task.課題id}')">
                 ${isDone ? '完了' : '未完了'}
             </button>
-
             <div class="subject">${task.教科 || "不明"}</div>
-            
             <div class="title">${task.課題名 || "無題の課題"}</div>
-            
             <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
-            
             <div class="task-footer">
                 <div class="time-left ${remaining.isUrgent ? 'urgent' : ''}">${remaining.text}</div>
                 <div class="deadline">${formatDateTime(task.期限)}</div>
@@ -492,7 +527,6 @@ function renderTasks(tasks) {
     });
 }
 
-/* --- モーダル制御 --- */
 function closeModals() {
     document.getElementById('add-modal').style.display = 'none';
     document.getElementById('detail-modal').style.display = 'none';
@@ -535,6 +569,7 @@ function openDetailModal(id) {
     document.getElementById('detail-modal').style.display = 'flex';
 }
 
+// 課題の追加送信
 async function submitTask() {
     const subject = document.getElementById('add-subject').value.trim();
     const title = document.getElementById('add-title').value.trim();
@@ -547,7 +582,6 @@ async function submitTask() {
         return;
     }
 
-    // 基本入力チェック
     if (!subject || !title || !deadlineRaw) {
         showNativePopup('科目名、課題名、期限は必須です。');
         return;
@@ -555,24 +589,17 @@ async function submitTask() {
     
     if (!userName) {
         showNativePopup('ユーザー情報が消えています。再設定してください。');
-        init(); // 再度モーダルを出すためにinitを呼ぶ
+        init();
         return;
     }
 
-    const d = new Date(deadlineRaw);
-    const formattedDeadline = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes()}`;
-    
-    // ペイロード作成（GAS側の引数名 'username' に合わせる）
-    const payload = {
-        action: 'add',
-        className: currentClass,
-        task: { 
-            subject: subject, 
-            title: title, 
-            detail: detail, 
-            deadline: formattedDeadline, 
-            userName: userName
-        }
+    // Java側の WorkData に適合するJSON構造
+    const taskData = {
+        subject: subject,
+        title: title,
+        description: detail,
+        date: deadlineRaw, // YYYY-MM-DD または YYYY-MM-DDTHH:mm
+        createBy: userName
     };
 
     try {
@@ -581,19 +608,15 @@ async function submitTask() {
         statusMsg.style.display = 'block';
         statusMsg.innerText = "追加処理中...";
         
-        const result = await apiAddTask(payload);
-        if (result.status === 'SUCCESS') {
-            loadTasks();
-        } else {
-            showNativePopup("追加エラー: " + result.status);
-            statusMsg.style.display = 'none';
-        }
+        await apiAddTask(currentClass, taskData);
+        loadTasks();
     } catch (e) {
         showNativePopup("通信エラー: " + e.message);
         document.getElementById('status-msg').style.display = 'none';
     }
 }
 
+// 課題の削除確認
 async function confirmDelete(id) {
     const online = await isOnline();
     if (!online) {
@@ -607,21 +630,15 @@ async function confirmDelete(id) {
         cancelText: 'キャンセル',
         onConfirm: async () => {
             closeModals();
-            const payload = {
-                action: 'delete',
-                className: currentClass,
-                id: id,
-                userName: userName
-            };
-
             try {
                 document.getElementById('status-msg').style.display = 'block';
                 document.getElementById('status-msg').innerText = '削除処理中...';
-                const result = await apiDeleteTask(payload);
-                if (result.status === 'SUCCESS') {
+                
+                const ok = await apiDeleteTask(currentClass, id);
+                if (ok) {
                     loadTasks();
                 } else {
-                    showNativePopup('削除エラー: ' + result.status);
+                    showNativePopup('削除に失敗しました');
                     document.getElementById('status-msg').style.display = 'none';
                 }
             } catch (e) {
@@ -642,7 +659,6 @@ function formatDateTime(isoString) {
 async function refreshTasks() {
     const icon = document.querySelector('.refresh-icon');
     icon.classList.add('spinning');
-    
     try {
         await loadTasks();
     } finally {
@@ -661,7 +677,6 @@ const handleOutsideClick = (event) => {
     }
 };
 
-window.addEventListener('click',handleOutsideClick);
+window.addEventListener('click', handleOutsideClick);
 window.addEventListener('touchstart', handleOutsideClick, { passive: true });
-
 window.addEventListener('DOMContentLoaded', init);
