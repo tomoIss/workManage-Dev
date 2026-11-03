@@ -1,5 +1,3 @@
-const API_URL = "https://workmanagebackend.25tomo.f5.si";
-
 const KEY_CLASS = 'dev_currentClass';
 const KEY_TASKS_PREFIX = 'dev_cachedTasks_';
 const USER_NAME = 'dev_userName';
@@ -13,74 +11,7 @@ let userName = localStorage.getItem(USER_NAME) || '';
 let isModalClosing = false;
 
 // ==========================================
-// API 通信関数レイヤー (Javaバックエンド連携)
-// ==========================================
-
-async function fetchWithRetry(url, options = {}, retries = 3) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await fetch(url, options);
-            if (response.ok) return response;
-            throw new Error(`HTTP ${response.status}`);
-        } catch (error) {
-            if (i === retries - 1) throw error;
-            const delay = Math.random() * 2000 + 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-}
-
-// クラス一覧取得 (GET /classList)
-async function apiGetClassList() {
-    const res = await fetchWithRetry(`${API_URL}/classList?t=${Date.now()}`, {
-        method: "GET",
-        mode: "cors"
-    });
-    return await res.json();
-}
-
-// 新規クラス追加 (POST /classList)
-async function apiCreateClass(className) {
-    const res = await fetchWithRetry(`${API_URL}/classList`, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ className: className })
-    });
-    return await res.json();
-}
-
-// 課題一覧取得 (GET /work/{class})
-async function apiGetTasks(className) {
-    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}?t=${Date.now()}`, {
-        method: "GET",
-        mode: "cors"
-    });
-    return await res.json();
-}
-
-// 課題追加 (POST /work/{class})
-async function apiAddTask(className, taskData) {
-    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}`, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskData)
-    });
-    return await res.json();
-}
-
-// 課題削除 (DELETE /work/{class}/{id})
-async function apiDeleteTask(className, id) {
-    const res = await fetchWithRetry(`${API_URL}/work/${encodeURIComponent(className)}/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        mode: "cors"
-    });
-    return res.ok;
-}
-
-// ==========================================
-// データ正規化ヘルパー (Java <-> フロントのキー変換)
+// データ正規化ヘルパー (Javaの英字キー -> 日本語キー変換)
 // ==========================================
 function normalizeTask(task) {
     if (!task) return null;
