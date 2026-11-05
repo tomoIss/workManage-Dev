@@ -367,8 +367,8 @@ async function loadTasks() {
         const result = await apiGetTasks(currentClass);
 
         if (result.status === 'SUCCESS') {
-            // {"status":"SUCCESS", "data": {"work": [...]}} から抽出して正規化
-            const rawTasks = result?.data?.work || result?.work || result?.tasks || [];
+            // {"status":"SUCCESS", "data": {"works": [...]}} から抽出して正規化
+            const rawTasks = result?.works? || result?.work || result?.tasks || [];
             currentTasks = rawTasks.map(normalizeTask).filter(Boolean);
 
             saveCachedTasks(currentClass, currentTasks);
