@@ -10,9 +10,14 @@ let existingClasses = [];
 
 // 表示切り替え管理用 ('list' | 'calendar')
 let currentView = 'list';
-let calendarModule = null; // 動的インポート保持用
 
-// --- 完了状態トグル・クリーンアップ ---
+// カレンダー用状態
+let calDisplayDate = new Date(); // 表示対象の年月
+let calSelectedDateStr = null;   // 選択中の日付 (YYYY-MM-DD)
+
+// ==========================================
+// 完了状態トグル・クリーンアップ
+// ==========================================
 function cleanupDoneTasks(latestTasks) {
     if (!currentClass) return;
     const doneList = Storage.getDoneTasks(currentClass);
@@ -36,12 +41,14 @@ function toggleTaskStatus(event, taskId) {
 
     if (currentView === 'list') {
         renderTasks(currentTasks);
-    } else if (calendarModule) {
-        calendarModule.renderCalendar(document.getElementById('calendar-view'), currentTasks, openDetailModal);
+    } else {
+        renderCalendar();
     }
 }
 
-// --- 画面描画 ---
+// ==========================================
+// 画面描画（カード一覧）
+// ==========================================
 function updateHeader() {
     const headerEl = document.getElementById('header-class-name');
     if (headerEl) {
@@ -89,8 +96,130 @@ function renderTasks(tasks) {
     });
 }
 
-// --- 表示切り替え処理（動的インポート） ---
-async function switchView(mode) {
+// ==========================================
+// カレンダー描画（app.js 内蔵・外部通信不要）
+// ==========================================
+function renderCalendar() {
+    const container = document.getElementById('calendar-view');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const year = calDisplayDate.getFullYear();
+    const month = calDisplayDate.getMonth();
+
+    // 日付 (YYYY-MM-DD) ごとに課題をグループ化
+    const taskMap = {};
+    currentTasks.forEach(task => {
+        if (!task.期限) return;
+        const dateKey = task.期限.substring(0, 10);
+        if (!taskMap[dateKey]) taskMap[dateKey] = [];
+        taskMap[dateKey].push(task);
+    });
+
+    const card = document.createElement('div');
+    card.className = 'calendar-card';
+
+    // ヘッダー
+    const header = document.createElement('div');
+    header.className = 'calendar-header';
+    header.innerHTML = `
+        <button id="cal-prev" type="button">&lt;</button>
+        <h3>${year}年 ${month + 1}月</h3>
+        <button id="cal-next" type="button">&gt;</button>
+    `;
+    card.appendChild(header);
+
+    // グリッド
+    const grid = document.createElement('div');
+    grid.className = 'calendar-grid';
+
+    // 曜日
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    days.forEach((d, idx) => {
+        const dEl = document.createElement('div');
+        dEl.className = 'calendar-day-header';
+        if (idx === 0) dEl.style.color = '#ff6b6b';
+        if (idx === 6) dEl.style.color = '#4dadf7';
+        dEl.innerText = d;
+        grid.appendChild(dEl);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // 先頭空白
+    for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        grid.appendChild(empty);
+    }
+
+    // 日付
+    for (let date = 1; date <= lastDate; date++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+        const dayTasks = taskMap[dateStr] || [];
+
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-day';
+        if (dateStr === todayStr) dayEl.classList.add('today');
+        if (dateStr === calSelectedDateStr) dayEl.classList.add('selected');
+
+        dayEl.innerHTML = `
+            <span>${date}</span>
+            ${dayTasks.length > 0 ? `<div class="task-dot"></div>` : ''}
+        `;
+
+        dayEl.onclick = () => {
+            calSelectedDateStr = (calSelectedDateStr === dateStr) ? null : dateStr;
+            renderCalendar();
+        };
+        grid.appendChild(dayEl);
+    }
+    card.appendChild(grid);
+
+    // 選択された日のタスク一覧
+    if (calSelectedDateStr) {
+        const dayTasks = taskMap[calSelectedDateStr] || [];
+        const taskListArea = document.createElement('div');
+        taskListArea.className = 'selected-day-tasks';
+        taskListArea.innerHTML = `<h4>📅 ${calSelectedDateStr} 締切の課題 (${dayTasks.length}件)</h4>`;
+
+        if (dayTasks.length === 0) {
+            taskListArea.innerHTML += `<p style="font-size: 0.85rem; color: #ccc;">この日が期限の課題はありません</p>`;
+        } else {
+            dayTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'calendar-task-item';
+                item.innerHTML = `
+                    <span><strong>[${escapeHtml(task.教科)}]</strong> ${escapeHtml(task.課題名)}</span>
+                    <small style="color: #f6c343;">${task.期限.includes('T') ? task.期限.substring(11, 16) : ''}</small>
+                `;
+                item.onclick = () => openDetailModal(task.課題id);
+                taskListArea.appendChild(item);
+            });
+        }
+        card.appendChild(taskListArea);
+    }
+
+    container.appendChild(card);
+
+    // 前月・翌月ボタン
+    card.querySelector('#cal-prev').onclick = () => {
+        calDisplayDate.setMonth(calDisplayDate.getMonth() - 1);
+        renderCalendar();
+    };
+    card.querySelector('#cal-next').onclick = () => {
+        calDisplayDate.setMonth(calDisplayDate.getMonth() + 1);
+        renderCalendar();
+    };
+}
+
+// ==========================================
+// 表示切り替え処理（直接描画）
+// ==========================================
+function switchView(mode) {
     currentView = mode;
     const taskListEl = document.getElementById('task-list');
     const calendarViewEl = document.getElementById('calendar-view');
@@ -108,16 +237,14 @@ async function switchView(mode) {
         listBtn.classList.remove('active');
         taskListEl.style.display = 'none';
         calendarViewEl.style.display = 'block';
-
-        // カレンダー選択時に初めて calendar.js を読み込む
-        if (!calendarModule) {
-            calendarModule = await import('./calendar.js');
-        }
-        calendarModule.renderCalendar(calendarViewEl, currentTasks, openDetailModal);
+        // 外部ファイル読み込みを行わず、即座に直接描画
+        renderCalendar();
     }
 }
 
-// --- APIデータ連携 ---
+// ==========================================
+// APIデータ連携
+// ==========================================
 async function loadTasks() {
     if (!currentClass) {
         await showClassSelection(false);
@@ -134,6 +261,8 @@ async function loadTasks() {
         currentTasks = cachedTasks;
         if (currentView === 'list') {
             renderTasks(currentTasks);
+        } else {
+            renderCalendar();
         }
         statusMsg.innerText = online ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
     } else if (!online) {
@@ -160,8 +289,8 @@ async function loadTasks() {
                 statusMsg.style.display = 'none';
                 if (currentView === 'list') {
                     renderTasks(currentTasks);
-                } else if (calendarModule) {
-                    calendarModule.renderCalendar(document.getElementById('calendar-view'), currentTasks, openDetailModal);
+                } else {
+                    renderCalendar();
                 }
             }
         } else {
@@ -171,13 +300,16 @@ async function loadTasks() {
         if (cachedTasks.length > 0) {
             statusMsg.innerHTML = `データ取得に失敗しました。前回のキャッシュを表示します。<br><small>${escapeHtml(error.message)}</small>`;
             if (currentView === 'list') renderTasks(cachedTasks);
+            else renderCalendar();
         } else {
             statusMsg.innerHTML = `取得に失敗しました。<br><small>${escapeHtml(error.message)}</small>`;
         }
     }
 }
 
-// --- 初期化 ---
+// ==========================================
+// 初期化
+// ==========================================
 async function init() {
     if (!userName) {
         showClassSelection(false);
@@ -201,7 +333,9 @@ async function init() {
     }
 }
 
-// --- クラス選択・作成 ---
+// ==========================================
+// クラス選択・作成
+// ==========================================
 async function fetchClassListOnly() {
     try {
         const res = await apiGetClassList();
@@ -296,7 +430,9 @@ async function createNewClass() {
     }
 }
 
-// --- 詳細・追加操作 ---
+// ==========================================
+// 詳細・追加・削除操作
+// ==========================================
 function openDetailModal(id) {
     if (Modal.isModalClosing()) return;
     const task = currentTasks.find(t => t.課題id === id);
