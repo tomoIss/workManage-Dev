@@ -1,7 +1,8 @@
 const KEY_CLASS = 'dev_currentClass';
 const KEY_TASKS_PREFIX = 'dev_cachedTasks_';
 const USER_NAME = 'dev_userName';
-const DONE_TASKS = 'dev_doneTasks';
+// 【修正】完了状態をクラスごとに分離管理するためのプレフィックス
+const KEY_DONE_PREFIX = 'dev_doneTasks_';
 
 let currentClass = localStorage.getItem(KEY_CLASS) || '';
 let currentTasks = [];
@@ -11,12 +12,26 @@ let userName = localStorage.getItem(USER_NAME) || '';
 let isModalClosing = false;
 
 // ==========================================
+// ユーティリティ: XSS対策 (HTMLエスケープ)
+// ==========================================
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// ==========================================
 // データ正規化ヘルパー (Javaの英字キー -> 日本語キー変換)
 // ==========================================
 function normalizeTask(task) {
     if (!task) return null;
     return {
-        課題id: task.id ?? task.課題id,
+        // "id" に末尾スペースが混入している場合にも対応
+        課題id: task.id ?? task["id "] ?? task.課題id,
         className: task.className,
         教科: task.subject ?? task.教科,
         課題名: task.title ?? task.課題名,
@@ -37,7 +52,8 @@ async function isOnline() {
         const response = await fetch('./icon/icon-192.jpg', { method: 'HEAD', cache: 'no-cache', signal: AbortSignal.timeout(3000) });
         return response.ok;
     } catch {
-        return false;
+        // 画像がない場合でもブラウザ自身がオンラインなら通信を試みるフォールバック
+        return navigator.onLine;
     }
 }
 
@@ -66,29 +82,34 @@ function getTaskFingerprint(task) {
     return `${task.課題id}-${task.教科}-${task.課題名}-${deadline}`;
 }
 
-function getDoneTasks() {
-    return JSON.parse(localStorage.getItem(DONE_TASKS) || '[]');
+// 【修正】クラス単位で完了タスクを取得
+function getDoneTasks(className = currentClass) {
+    if (!className) return [];
+    return JSON.parse(localStorage.getItem(KEY_DONE_PREFIX + className) || '[]');
 }
 
+// 【修正】他クラスの完了状態を消さないよう、現在のクラス限定でクリーンアップ
 function cleanupDoneTasks(latestTasks) {
-    const doneList = getDoneTasks();
+    if (!currentClass) return;
+    const doneList = getDoneTasks(currentClass);
     if (doneList.length === 0) return;
 
     const validFingerprints = latestTasks.map(task => getTaskFingerprint(task));
     const cleanedList = doneList.filter(fingerprint => validFingerprints.includes(fingerprint));
 
-    localStorage.setItem(DONE_TASKS, JSON.stringify(cleanedList));
-    console.log(`キャッシュを整理しました。保持中: ${cleanedList.length}件`);
+    localStorage.setItem(KEY_DONE_PREFIX + currentClass, JSON.stringify(cleanedList));
+    console.log(`[${currentClass}] キャッシュを整理しました。保持中: ${cleanedList.length}件`);
 }
 
+// 【修正】対象クラスの完了データを更新
 function toggleTaskStatus(event, taskId) {
     event.stopPropagation();
 
     const task = currentTasks.find(t => t.課題id == taskId);
-    if (!task) return;
+    if (!task || !currentClass) return;
 
     const fingerprint = getTaskFingerprint(task);
-    let doneList = getDoneTasks();
+    let doneList = getDoneTasks(currentClass);
 
     if (doneList.includes(fingerprint)) {
         doneList = doneList.filter(f => f !== fingerprint);
@@ -96,7 +117,7 @@ function toggleTaskStatus(event, taskId) {
         doneList.push(fingerprint);
     }
 
-    localStorage.setItem(DONE_TASKS, JSON.stringify(doneList));
+    localStorage.setItem(KEY_DONE_PREFIX + currentClass, JSON.stringify(doneList));
     renderTasks(currentTasks);
 }
 
@@ -184,10 +205,7 @@ function submitInitialUsername() {
 async function fetchClassListOnly() {
     try {
         const res = await apiGetClassList();
-        // {"status":"SUCCESS", "data": {"classes": [...]}} またはフォールバック
-        const list = res?.data?.classes || res?.classes || res?.data || [];
-        
-        // オブジェクト配列 [{"className": "1-1issR8"}] の場合は文字列配列へ正規化
+        const list = res?.classes || res?.data?.classes || res?.data || [];
         existingClasses = list.map(item => typeof item === 'object' && item !== null ? (item.className || item.id) : item);
         return existingClasses;
     } catch (e) {
@@ -217,7 +235,10 @@ function updateClassSelectionButtons() {
 }
 
 function updateHeader() {
-    document.getElementById('header-class-name').innerHTML = `${currentClass || '未設定'}<br>課題リストDev`;
+    const headerEl = document.getElementById('header-class-name');
+    if (headerEl) {
+        headerEl.innerHTML = `${escapeHtml(currentClass || '未設定')}<br>課題リストDev`;
+    }
 }
 
 async function showClassSelection(canCancel = true) {
@@ -319,7 +340,6 @@ async function createNewClass() {
             showNativePopup(`既存のクラス「${normalized}」が見つかりました。接続します。`);
             selectClass(normalized);
         } else {
-            // サーバーに登録
             await apiCreateClass(normalized);
             showNativePopup(`新規クラス「${normalized}」を作成しました。`);
             selectClass(normalized);
@@ -367,8 +387,8 @@ async function loadTasks() {
         const result = await apiGetTasks(currentClass);
 
         if (result.status === 'SUCCESS') {
-            // {"status":"SUCCESS", "data": {"works": [...]}} から抽出して正規化
-            const rawTasks = result?.works || result?.work || result?.tasks || [];
+            // 【構文エラー修正】余計な「?」を除去し、works を優先取得
+            const rawTasks = result?.works || result?.data?.works || result?.work || result?.tasks || [];
             currentTasks = rawTasks.map(normalizeTask).filter(Boolean);
 
             saveCachedTasks(currentClass, currentTasks);
@@ -386,10 +406,10 @@ async function loadTasks() {
         }
     } catch (error) {
         if (cachedTasks.length > 0) {
-            statusMsg.innerHTML = `データ取得に失敗しました。前回のキャッシュを表示します。<br><small>${error.message}</small>`;
+            statusMsg.innerHTML = `データ取得に失敗しました。前回のキャッシュを表示します。<br><small>${escapeHtml(error.message)}</small>`;
             renderTasks(cachedTasks);
         } else {
-            statusMsg.innerHTML = `取得に失敗しました。<br><small>${error.message}</small>`;
+            statusMsg.innerHTML = `取得に失敗しました。<br><small>${escapeHtml(error.message)}</small>`;
         }
     }
 }
@@ -418,10 +438,11 @@ function getRemainingTime(isoString) {
     }
 }
 
+// 【修正】escapeHtml で XSS を防止
 function renderTasks(tasks) {
     const container = document.getElementById('task-list');
     container.innerHTML = '';
-    const doneList = getDoneTasks();
+    const doneList = getDoneTasks(currentClass);
     
     const validTasks = tasks.filter(task => task && (task.課題id || task.教科 || task.課題名));
     if (validTasks.length === 0) {
@@ -443,15 +464,15 @@ function renderTasks(tasks) {
 
         card.innerHTML = `
             <button class="status-toggle-btn ${isDone ? 'is-done' : ''}" 
-                    onclick="toggleTaskStatus(event, '${task.課題id}')">
+                    onclick="toggleTaskStatus(event, '${escapeHtml(task.課題id)}')">
                 ${isDone ? '完了' : '未完了'}
             </button>
-            <div class="subject">${task.教科 || "不明"}</div>
-            <div class="title">${task.課題名 || "無題の課題"}</div>
-            <div class="detail-badge">${task.詳細 || "==詳細なし=="}</div>
+            <div class="subject">${escapeHtml(task.教科 || "不明")}</div>
+            <div class="title">${escapeHtml(task.課題名 || "無題の課題")}</div>
+            <div class="detail-badge">${escapeHtml(task.詳細 || "==詳細なし==")}</div>
             <div class="task-footer">
-                <div class="time-left ${remaining.isUrgent ? 'urgent' : ''}">${remaining.text}</div>
-                <div class="deadline">${formatDateTime(task.期限)}</div>
+                <div class="time-left ${remaining.isUrgent ? 'urgent' : ''}">${escapeHtml(remaining.text)}</div>
+                <div class="deadline">${escapeHtml(formatDateTime(task.期限))}</div>
             </div>
         `;
         container.appendChild(card);
@@ -524,12 +545,11 @@ async function submitTask() {
         return;
     }
 
-    // Java側の WorkData に適合するJSON構造
     const taskData = {
         subject: subject,
         title: title,
         description: detail,
-        date: deadlineRaw, // YYYY-MM-DD または YYYY-MM-DDTHH:mm
+        date: deadlineRaw,
         createBy: userName
     };
 
@@ -589,12 +609,12 @@ function formatDateTime(isoString) {
 
 async function refreshTasks() {
     const icon = document.querySelector('.refresh-icon');
-    icon.classList.add('spinning');
+    if (icon) icon.classList.add('spinning');
     try {
         await loadTasks();
     } finally {
         setTimeout(() => {
-            icon.classList.remove('spinning');
+            if (icon) icon.classList.remove('spinning');
         }, 500);
     }
 }
@@ -608,6 +628,6 @@ const handleOutsideClick = (event) => {
     }
 };
 
+// 【修正】スマホスクロール時の誤爆クローズを防ぐため touchstart は削除し click のみに集約
 window.addEventListener('click', handleOutsideClick);
-window.addEventListener('touchstart', handleOutsideClick, { passive: true });
 window.addEventListener('DOMContentLoaded', init);
