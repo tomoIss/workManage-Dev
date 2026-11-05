@@ -7,7 +7,10 @@ const urlsToCache = [
   './manifest.json',
   './css/style.css',
   './js/api.js',
-  './js/ui.js',
+  './js/app.js',       // ★ ui.js を app.js に変更
+  './js/storage.js',   // 分割したファイルを使っている場合
+  './js/utils.js',
+  './js/modal.js',
   './icon/icon-192.jpg',
   './icon/icon-512.jpg'
 ];
