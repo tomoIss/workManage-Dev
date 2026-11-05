@@ -45,6 +45,30 @@ async function apiGetTasks(className) {
 }
 
 /**
+ * クラスを新規登録する (POST /classList)
+ * @param {string} className - クラス名 (例: "1-1issR8")
+ */
+async function apiCreateClass(className) {
+    const res = await fetchWithRetry(`${API_URL}/classList`, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            className: className
+        })
+    });
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
+
+    return await res.json();
+}
+
+/**
  * 3. 課題を追加する
  * @param {string} className - クラス名 (例: "1-1issR1")
  * @param {object} payload - { subject, title, description, date, createBy }
