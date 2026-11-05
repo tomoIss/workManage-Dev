@@ -368,7 +368,7 @@ async function loadTasks() {
 
         if (result.status === 'SUCCESS') {
             // {"status":"SUCCESS", "data": {"works": [...]}} から抽出して正規化
-            const rawTasks = result?.works? || result?.work || result?.tasks || [];
+            const rawTasks = result?.works || result?.work || result?.tasks || [];
             currentTasks = rawTasks.map(normalizeTask).filter(Boolean);
 
             saveCachedTasks(currentClass, currentTasks);
