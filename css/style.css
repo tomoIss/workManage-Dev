@@ -606,7 +606,7 @@ header {
 }
 
 /* --- 表示切替トグル --- */
-.view-toggle-container {
+.view-toggle-bar {
     display: flex;
     justify-content: center;
     gap: 8px;
