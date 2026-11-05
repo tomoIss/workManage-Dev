@@ -8,6 +8,10 @@ let userName = Storage.getStoredUser();
 let currentTasks = [];
 let existingClasses = [];
 
+// 表示切り替え管理用 ('list' | 'calendar')
+let currentView = 'list';
+let calendarModule = null; // 動的インポート保持用
+
 // --- 完了状態トグル・クリーンアップ ---
 function cleanupDoneTasks(latestTasks) {
     if (!currentClass) return;
@@ -29,7 +33,12 @@ function toggleTaskStatus(event, taskId) {
 
     doneList = doneList.includes(fp) ? doneList.filter(f => f !== fp) : [...doneList, fp];
     Storage.saveDoneTasks(currentClass, doneList);
-    renderTasks(currentTasks);
+
+    if (currentView === 'list') {
+        renderTasks(currentTasks);
+    } else if (calendarModule) {
+        calendarModule.renderCalendar(document.getElementById('calendar-view'), currentTasks, openDetailModal);
+    }
 }
 
 // --- 画面描画 ---
@@ -80,6 +89,34 @@ function renderTasks(tasks) {
     });
 }
 
+// --- 表示切り替え処理（動的インポート） ---
+async function switchView(mode) {
+    currentView = mode;
+    const taskListEl = document.getElementById('task-list');
+    const calendarViewEl = document.getElementById('calendar-view');
+    const listBtn = document.getElementById('toggle-list-btn');
+    const calBtn = document.getElementById('toggle-cal-btn');
+
+    if (mode === 'list') {
+        listBtn.classList.add('active');
+        calBtn.classList.remove('active');
+        taskListEl.style.display = 'grid';
+        calendarViewEl.style.display = 'none';
+        renderTasks(currentTasks);
+    } else {
+        calBtn.classList.add('active');
+        listBtn.classList.remove('active');
+        taskListEl.style.display = 'none';
+        calendarViewEl.style.display = 'block';
+
+        // カレンダー選択時に初めて calendar.js を読み込む
+        if (!calendarModule) {
+            calendarModule = await import('./calendar.js');
+        }
+        calendarModule.renderCalendar(calendarViewEl, currentTasks, openDetailModal);
+    }
+}
+
 // --- APIデータ連携 ---
 async function loadTasks() {
     if (!currentClass) {
@@ -95,7 +132,9 @@ async function loadTasks() {
     const cachedTasks = Storage.loadCachedTasks(currentClass);
     if (cachedTasks.length > 0) {
         currentTasks = cachedTasks;
-        renderTasks(currentTasks);
+        if (currentView === 'list') {
+            renderTasks(currentTasks);
+        }
         statusMsg.innerText = online ? '最新データを取得しています...' : 'オフライン中：前回のデータを表示しています';
     } else if (!online) {
         statusMsg.innerText = 'オフライン中です。前回のデータがありません。';
@@ -119,7 +158,11 @@ async function loadTasks() {
                 container.innerHTML = '';
             } else {
                 statusMsg.style.display = 'none';
-                renderTasks(currentTasks);
+                if (currentView === 'list') {
+                    renderTasks(currentTasks);
+                } else if (calendarModule) {
+                    calendarModule.renderCalendar(document.getElementById('calendar-view'), currentTasks, openDetailModal);
+                }
             }
         } else {
             statusMsg.innerText = 'データエラー: ' + result.status;
@@ -127,7 +170,7 @@ async function loadTasks() {
     } catch (error) {
         if (cachedTasks.length > 0) {
             statusMsg.innerHTML = `データ取得に失敗しました。前回のキャッシュを表示します。<br><small>${escapeHtml(error.message)}</small>`;
-            renderTasks(cachedTasks);
+            if (currentView === 'list') renderTasks(cachedTasks);
         } else {
             statusMsg.innerHTML = `取得に失敗しました。<br><small>${escapeHtml(error.message)}</small>`;
         }
@@ -388,6 +431,7 @@ window.closeModals = Modal.closeModals;
 window.submitTask = submitTask;
 window.refreshTasks = refreshTasks;
 window.toggleTaskStatus = toggleTaskStatus;
+window.switchView = switchView;
 
 // リスナー登録
 window.addEventListener('click', (event) => {

@@ -78,7 +78,16 @@
         <button class="add-btn" onclick="openAddModal()">新たな課題の追加</button>
     </header>
 
+    <!-- ★追加：表示切替トグル -->
+    <div class="view-toggle-bar">
+        <button id="toggle-list-btn" class="toggle-btn active" onclick="switchView('list')">🗂️ カード表示</button>
+        <button id="toggle-cal-btn" class="toggle-btn" onclick="switchView('calendar')">📅 カレンダー表示</button>
+    </div>
+
     <main id="task-list" class="task-grid"></main>
+
+    <!-- ★追加：カレンダー表示用コンテナ -->
+    <div id="calendar-view" style="display: none;"></div>
 
     <div id="status-msg">チョークで書き込み中...</div>
 
