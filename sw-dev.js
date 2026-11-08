@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'kadai-kanri-dev-'; 
-const CACHE_NAME = CACHE_PREFIX + 'v1.6';
+const CACHE_NAME = CACHE_PREFIX + 'v1.5';
 
 const urlsToCache = [
   './',
@@ -7,10 +7,7 @@ const urlsToCache = [
   './manifest.json',
   './css/style.css',
   './js/api.js',
-  './js/app.js',       // ★ ui.js を app.js に変更
-  './js/storage.js',   // 分割したファイルを使っている場合
-  './js/utils.js',
-  './js/modal.js',
+  './js/ui.js',
   './icon/icon-192.jpg',
   './icon/icon-512.jpg'
 ];
